@@ -1,3 +1,6 @@
+# idea ide conf
+.idea/
+
 *.class
 
 # Log file
