@@ -2,8 +2,6 @@
 .idea/
 .svn/
 
-*.eml
-
 *.class
 
 # Log file
