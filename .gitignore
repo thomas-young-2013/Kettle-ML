@@ -1,5 +1,8 @@
-# idea ide conf
+# version control conf
 .idea/
+.svn/
+
+*.eml
 
 *.class
 
