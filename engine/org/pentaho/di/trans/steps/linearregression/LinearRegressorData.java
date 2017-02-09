@@ -34,19 +34,8 @@ public class LinearRegressorData extends BaseStepData implements StepDataInterfa
     public int[] fieldnrs; // the corresponding field numbers;
     public FileObject fil;
     public RowMetaInterface outputRowMeta;
-    public int sortSize;
-    public boolean compressFiles;
-    public int[] convertKeysToNative;
-    public boolean convertAnyKeysToNative;
-
-    Comparator<RowTempFile> comparator;
-    Comparator<Object[]> rowComparator;
 
     public int freeCounter;
-    public int freeMemoryPct;
-    public int minSortSize;
-    public int freeMemoryPctLimit;
-    public int memoryReporting;
 
     /*
      * Group Fields Implementation heroic
