@@ -8,9 +8,6 @@ import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaString;
-import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.repository.ObjectId;
@@ -33,9 +30,9 @@ import java.util.List;
 public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterface {
     private static Class<?> PKG = LinearRegressorMeta.class; // for i18n purposes, needed by Translator2!!
 
-    /** false : features, true=target values */
+    /** target field's name*/
     @Injection( name = "TARGET_FIELD", group = "FIELDS" )
-    private boolean[] targetField;
+    private String targetField;
 
     /* learning rate */
     @Injection( name = "LEARNING_RATE", group = "FIELDS")
@@ -57,25 +54,19 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         super(); // allocate BaseStepMeta
     }
 
-    public void allocate( int nrfields ) {
-        targetField = new boolean[nrfields];
-    }
-
     @Override
     public void setDefault() {
         learningRate = 0.01;
         regulationValue = 0.1;
         trainDataPercentage = 0.8;
         foldNum = 5;
-
-        allocate( 0 );
     }
 
-    public boolean[] getTargetField() {
+    public String getTargetField() {
         return targetField;
     }
 
-    public void setTargetField(boolean[] targetField) {
+    public void setTargetField(String targetField) {
         this.targetField = targetField;
     }
 

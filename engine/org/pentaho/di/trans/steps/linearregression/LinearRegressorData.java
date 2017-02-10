@@ -44,6 +44,13 @@ public class LinearRegressorData extends BaseStepData implements StepDataInterfa
     public int[] groupnrs;
     public boolean newBatch;
 
+    // the index of target field.
+    public int targetIndex;
+
+    public int featureFieldnrs;
+
+    public double[] weights;
+
     public LinearRegressorData() {
         super();
 

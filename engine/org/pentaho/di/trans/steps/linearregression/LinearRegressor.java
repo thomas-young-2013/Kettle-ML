@@ -10,8 +10,10 @@ import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleFileException;
 import org.pentaho.di.core.exception.KettleValueException;
+import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.core.vfs.KettleVFS;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
@@ -36,6 +38,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+/*
+* things:
+*   1. the features' type: all double?
+*
+* */
+
 public class LinearRegressor extends BaseStep implements StepInterface {
     private static Class<?> PKG = LinearRegressor.class; // for i18n
 
@@ -47,7 +55,23 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
     }
 
-    public void dolinearRegression() {}
+    // run the linear regression algorithm.
+    public void dolinearRegression() {
+        // allocate matrix
+        double [][] mat = new double[data.buffer.size()][data.featureFieldnrs];
+        int rowcnt = 0;
+        for (Object[] row: data.buffer) {
+            int colcnt = 0;
+            for (int i=0; i < data.featureFieldnrs; i++) {
+                if (i != data.targetIndex) mat[rowcnt][colcnt++] = (double) row[i];
+                else mat[rowcnt][data.featureFieldnrs-1] = (double) row[i];
+            }
+            rowcnt++;
+        }
+        // check the process.
+        assert(data.buffer.size() == rowcnt);
+        
+    }
 
     @Override
     public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
@@ -66,12 +90,24 @@ public class LinearRegressor extends BaseStep implements StepInterface {
                 return false;
             }
 
+            // set the target field's index.
             RowMetaInterface inputRowMeta = getInputRowMeta();
-
+            data.targetIndex = inputRowMeta.indexOfValue( meta.getTargetField() );
+            int featureFieldNumber = inputRowMeta.size();
+            data.featureFieldnrs = featureFieldNumber;
+            data.weights = new double[featureFieldNumber];
 
             // Metadata
-            data.outputRowMeta = inputRowMeta.clone();
-            meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );
+            /*data.outputRowMeta = inputRowMeta.clone();
+            meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );*/
+
+            RowMeta rowMeta = new RowMeta();
+            for ( int i = 0; i < featureFieldNumber; i++) {
+                rowMeta.addValueMeta(new ValueMetaNumber(inputRowMeta.getFieldNames()[i], 10, 6));
+            }
+
+            rowMeta.addValueMeta(new ValueMetaNumber("constantField", 10, 6));
+            data.outputRowMeta = rowMeta;
 
         } // end if first
 
