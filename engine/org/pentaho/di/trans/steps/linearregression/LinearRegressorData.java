@@ -31,7 +31,6 @@ public class LinearRegressorData extends BaseStepData implements StepDataInterfa
     // To store rows and file references
     public List<RowTempFile> tempRows;
 
-    public int[] fieldnrs; // the corresponding field numbers;
     public FileObject fil;
     public RowMetaInterface outputRowMeta;
 
@@ -46,8 +45,8 @@ public class LinearRegressorData extends BaseStepData implements StepDataInterfa
 
     // the index of target field.
     public int targetIndex;
-
-    public int featureFieldnrs;
+    // the number of field, including the target and features.
+    public int fieldnrs;
 
     public double[] weights;
 
