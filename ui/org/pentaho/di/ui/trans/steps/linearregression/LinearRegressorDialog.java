@@ -119,76 +119,28 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         fdStepname.right = new FormAttachment( 100, 0 );
         wStepname.setLayoutData( fdStepname );
 
-        // Temp directory for sorting
-        wlSortDir = new Label( shell, SWT.RIGHT );
-        wlSortDir.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.SortDir.Label" ) );
-        props.setLook( wlSortDir );
-        fdlSortDir = new FormData();
-        fdlSortDir.left = new FormAttachment( 0, 0 );
-        fdlSortDir.right = new FormAttachment( middle, -margin );
-        fdlSortDir.top = new FormAttachment( wStepname, margin );
-        wlSortDir.setLayoutData( fdlSortDir );
 
-        wbSortDir = new Button( shell, SWT.PUSH | SWT.CENTER );
-        props.setLook( wbSortDir );
-        wbSortDir.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
-        fdbSortDir = new FormData();
-        fdbSortDir.right = new FormAttachment( 100, 0 );
-        fdbSortDir.top = new FormAttachment( wStepname, margin );
-        wbSortDir.setLayoutData( fdbSortDir );
-
-        wSortDir = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-        wSortDir.setText( "temp" );
-        props.setLook( wSortDir );
-        wSortDir.addModifyListener( lsMod );
-        fdSortDir = new FormData();
-        fdSortDir.left = new FormAttachment( middle, 0 );
-        fdSortDir.top = new FormAttachment( wStepname, margin );
-        fdSortDir.right = new FormAttachment( wbSortDir, -margin );
-        wSortDir.setLayoutData( fdSortDir );
-
-        wbSortDir.addSelectionListener( new SelectionAdapter() {
-            @Override
-            public void widgetSelected( SelectionEvent arg0 ) {
-                DirectoryDialog dd = new DirectoryDialog( shell, SWT.NONE );
-                dd.setFilterPath( wSortDir.getText() );
-                String dir = dd.open();
-                if ( dir != null ) {
-                    wSortDir.setText( dir );
-                }
-            }
-        } );
-
-        // Whenever something changes, set the tooltip to the expanded version:
-        wSortDir.addModifyListener( new ModifyListener() {
-            @Override
-            public void modifyText( ModifyEvent e ) {
-                wSortDir.setToolTipText( transMeta.environmentSubstitute( wSortDir.getText() ) );
-            }
-        } );
-
-        // Prefix of temporary file
+        // learning rate
         wlPrefix = new Label( shell, SWT.RIGHT );
-        wlPrefix.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.Prefix.Label" ) );
+        wlPrefix.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.LearningRate.Label" ) );
         props.setLook( wlPrefix );
         fdlPrefix = new FormData();
         fdlPrefix.left = new FormAttachment( 0, 0 );
         fdlPrefix.right = new FormAttachment( middle, -margin );
-        fdlPrefix.top = new FormAttachment( wbSortDir, margin * 2 );
+        fdlPrefix.top = new FormAttachment( wStepname, margin * 2 );
         wlPrefix.setLayoutData( fdlPrefix );
         wPrefix = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
         props.setLook( wPrefix );
         wPrefix.addModifyListener( lsMod );
         fdPrefix = new FormData();
         fdPrefix.left = new FormAttachment( middle, 0 );
-        fdPrefix.top = new FormAttachment( wbSortDir, margin * 2 );
+        fdPrefix.top = new FormAttachment( wStepname, margin * 2 );
         fdPrefix.right = new FormAttachment( 100, 0 );
         wPrefix.setLayoutData( fdPrefix );
-        wPrefix.setText( "srt" );
 
-        // Maximum number of lines to keep in memory before using temporary files
+        // iterations
         wlSortSize = new Label( shell, SWT.RIGHT );
-        wlSortSize.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.SortSize.Label" ) );
+        wlSortSize.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.IterationNum.Label" ) );
         props.setLook( wlSortSize );
         fdlSortSize = new FormData();
         fdlSortSize.left = new FormAttachment( 0, 0 );
@@ -386,7 +338,6 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         };
 
         wStepname.addSelectionListener( lsDef );
-        wSortDir.addSelectionListener( lsDef );
         wPrefix.addSelectionListener( lsDef );
         wSortSize.addSelectionListener( lsDef );
         wFreeMemory.addSelectionListener( lsDef );
