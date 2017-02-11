@@ -18,48 +18,24 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 public class LinearRegressorData extends BaseStepData implements StepDataInterface {
-    public List<FileObject> files;
     public List<Object[]> buffer;
     public int getBufferIndex;
 
-    public List<InputStream> fis;
-    public List<GZIPInputStream> gzis;
-    public List<DataInputStream> dis;
-    public List<Object[]> rowbuffer;
-    public List<Integer> bufferSizes;
-
-    // To store rows and file references
-    public List<RowTempFile> tempRows;
-
-    public FileObject fil;
     public RowMetaInterface outputRowMeta;
 
     public int freeCounter;
 
-    /*
-     * Group Fields Implementation heroic
-     */
-    public Object[] previous;
-    public int[] groupnrs;
-    public boolean newBatch;
-
     // the index of target field.
     public int targetIndex;
+
     // the number of field, including the target and features.
     public int fieldnrs;
 
-    public double[] weights;
+    // store the weights(delta)
+    public Object[] weights;
 
     public LinearRegressorData() {
         super();
-
-        files = new ArrayList<FileObject>();
-        fis = new ArrayList<InputStream>();
-        gzis = new ArrayList<GZIPInputStream>();
-        dis = new ArrayList<DataInputStream>();
-        bufferSizes = new ArrayList<Integer>();
-
-        previous = null; // Heroic
     }
 
 }

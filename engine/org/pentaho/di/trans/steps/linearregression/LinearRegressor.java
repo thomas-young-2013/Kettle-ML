@@ -5,15 +5,11 @@
 package org.pentaho.di.trans.steps.linearregression;
 
 import Jama.Matrix;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
 import org.pentaho.di.computation.MatrixUtils;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
-import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStep;
@@ -21,10 +17,7 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
-import org.pentaho.di.trans.steps.sort.RowTempFile;
 
-import java.io.DataInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +39,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
     }
 
     // run the linear regression algorithm.
-    public void dolinearRegression() {
+    public void doLinearRegression() {
 
         // allocate matrix
         double [][] mat = new double[data.buffer.size()][data.fieldnrs];
@@ -137,18 +130,20 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             data.targetIndex = inputRowMeta.indexOfValue( meta.getTargetField() );
             int featureFieldNumber = inputRowMeta.size();
             data.fieldnrs = featureFieldNumber;
-            data.weights = new double[featureFieldNumber];
+            data.weights = new Object[featureFieldNumber];
 
             // Metadata
             /*data.outputRowMeta = inputRowMeta.clone();
             meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );*/
 
             RowMeta rowMeta = new RowMeta();
+            rowMeta.addValueMeta(new ValueMetaNumber("constantField", 10, 6));
+
             for ( int i = 0; i < featureFieldNumber; i++) {
-                rowMeta.addValueMeta(new ValueMetaNumber(inputRowMeta.getFieldNames()[i], 10, 6));
+                if( i != data.targetIndex )
+                    rowMeta.addValueMeta(new ValueMetaNumber(inputRowMeta.getFieldNames()[i], 10, 6));
             }
 
-            rowMeta.addValueMeta(new ValueMetaNumber("constantField", 10, 6));
             data.outputRowMeta = rowMeta;
 
         } // end if first
@@ -156,10 +151,12 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         // it is not first row and it is null
         if ( r == null ) {
             // add linear algorithm here.
-            this.dolinearRegression();
+            this.doLinearRegression();
+            // pass the weight to next step
+            putRow( data.outputRowMeta, data.weights );
 
             // flush result and set output done.
-            this.passBuffer();
+            clearBuffers();
             this.setOutputDone();
             return false;
         }
@@ -182,50 +179,6 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         data.freeCounter++;
     }
 
-    /**
-     * get sorted rows from available files in iterative manner.
-     * that means call to this method will continue to return rows
-     * till all temp files will not be read to the end.
-     * */
-    Object[] getBuffer() throws KettleValueException {
-        Object[] retval;
-        retval = null;
-        return retval;
-    }
-
-    /**
-     * This method passes all rows in the buffer to the next steps. Usually call to this method indicates that this
-     * particular step finishing processing.
-     *
-     */
-    void passBuffer() throws KettleException {
-        // Now we can start the output!
-        //
-        Object[] r = getBuffer();
-        Object[] previousRow = null;
-
-        // log time spent for external merge (expected time consuming operation)
-        if ( log.isDebug() && !data.files.isEmpty() ) {
-            this.logDebug( BaseMessages.getString( PKG, "SortRows.Debug.ExternalMergeStarted" ) );
-        }
-
-        while ( r != null && !isStopped() ) {
-            if ( log.isRowLevel() ) {
-                logRowlevel( BaseMessages.getString( PKG, "SortRows.RowLevel.ReadRow", getInputRowMeta().getString( r ) ) );
-            }
-
-            r = getBuffer();
-        }
-
-        if ( log.isDebug() && !data.files.isEmpty() ) {
-            this.logDebug( BaseMessages.getString( PKG, "SortRows.Debug.ExternalMergeFinished" ) );
-        }
-
-        // Clear out the buffer for the next batch
-        //
-        clearBuffers();
-    }
-
     @Override
     public boolean init( StepMetaInterface smi, StepDataInterface sdi ) {
         meta = (LinearRegressorMeta) smi;
@@ -239,12 +192,6 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         //
         data.buffer = new ArrayList<Object[]>( 5000 );
 
-        // Buffer for reading from disk
-        //
-        data.rowbuffer = new ArrayList<Object[]>( 5000 );
-
-        data.tempRows = new ArrayList<RowTempFile>();
-
         return true;
     }
 
@@ -255,34 +202,9 @@ public class LinearRegressor extends BaseStep implements StepInterface {
     }
 
     private void clearBuffers() {
-        // Clean out the sort buffer
+        // Clean out the buffer
         data.buffer.clear();
         data.getBufferIndex = 0;
-        data.rowbuffer.clear();
-
-        // close any open DataInputStream objects
-        if ( ( data.dis != null ) && ( data.dis.size() > 0 ) ) {
-            for ( DataInputStream dis : data.dis ) {
-                BaseStep.closeQuietly( dis );
-            }
-        }
-        // close any open InputStream objects
-        if ( ( data.fis != null ) && ( data.fis.size() > 0 ) ) {
-            for ( InputStream is : data.fis ) {
-                BaseStep.closeQuietly( is );
-            }
-        }
-        // remove temp files
-        for ( int f = 0; f < data.files.size(); f++ ) {
-            FileObject fileToDelete = data.files.get( f );
-            try {
-                if ( fileToDelete != null && fileToDelete.exists() ) {
-                    fileToDelete.delete();
-                }
-            } catch ( FileSystemException e ) {
-                logError( e.getLocalizedMessage(), e );
-            }
-        }
     }
 
     /**
@@ -291,7 +213,6 @@ public class LinearRegressor extends BaseStep implements StepInterface {
      */
     @Override
     public void batchComplete() throws KettleException {
-        passBuffer();
         setOutputDone();
     }
 }
