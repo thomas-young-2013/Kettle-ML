@@ -168,7 +168,7 @@
  <step id="TransExecutor"> <description>i18n:org.pentaho.di.trans.step:BaseStep.TypeLongDesc.TransExecutor</description> <classname>org.pentaho.di.trans.steps.transexecutor.TransExecutorMeta</classname> <category>i18n:org.pentaho.di.trans.step:BaseStep.Category.Flow</category> <tooltip>i18n:org.pentaho.di.trans.step:BaseStep.TypeTooltipDesc.TransExecutor</tooltip> <iconfile>ui/images/TRNEx.svg</iconfile> <documentation_url>http://wiki.pentaho.com/display/EAI/Transformation+Executor</documentation_url> <cases_url/> <forum_url/> </step>
  <step id="LinearRegressor">
   <description>i18n:org.pentaho.di.trans.step:BaseStep.TypeLongDesc.LinearRegressor</description>
-  <classname>org.pentaho.di.trans.steps.linearregression.LinearRegressor</classname>
+  <classname>org.pentaho.di.trans.steps.linearregression.LinearRegressorMeta</classname>
   <category>i18n:org.pentaho.di.trans.step:BaseStep.Category.Transform</category>
   <tooltip>i18n:org.pentaho.di.trans.step:BaseStep.TypeTooltipDesc.LinearRegressor</tooltip>
   <iconfile>ui/images/lr.jpg</iconfile>

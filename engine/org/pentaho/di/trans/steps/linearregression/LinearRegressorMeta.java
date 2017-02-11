@@ -50,6 +50,10 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     @Injection( name = "FOLD_NUM", group = "FIELDS")
     private int foldNum;
 
+    /** order by which fields? */
+    @Injection( name = "NAME", group = "FIELDS" )
+    private String[] fieldName;
+
     public LinearRegressorMeta() {
         super(); // allocate BaseStepMeta
     }
@@ -60,6 +64,20 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         regulationValue = 0.1;
         trainDataPercentage = 0.8;
         foldNum = 5;
+        int nrfields = 0;
+
+        allocate( nrfields );
+    }
+
+    public void allocate( int nrfields ) {
+        fieldName = new String[nrfields]; // order by
+    }
+
+    /**
+     * @return Returns the fieldName.
+     */
+    public String[] getFieldName() {
+        return fieldName;
     }
 
     public String getTargetField() {
