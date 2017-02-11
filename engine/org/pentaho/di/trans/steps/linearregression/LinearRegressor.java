@@ -4,17 +4,15 @@
 
 package org.pentaho.di.trans.steps.linearregression;
 
+import Jama.Matrix;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-import org.pentaho.di.core.Const;
+import org.pentaho.di.computation.MatrixUtils;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.exception.KettleFileException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
-import org.pentaho.di.core.vfs.KettleVFS;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -24,19 +22,11 @@ import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.sort.RowTempFile;
-import org.pentaho.di.trans.steps.sort.SortRows;
-import org.pentaho.di.trans.steps.sort.SortRowsData;
-import org.pentaho.di.trans.steps.sort.SortRowsMeta;
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 
 /*
 * things:
@@ -57,20 +47,72 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
     // run the linear regression algorithm.
     public void dolinearRegression() {
+
         // allocate matrix
-        double [][] mat = new double[data.buffer.size()][data.featureFieldnrs];
+        double [][] mat = new double[data.buffer.size()][data.fieldnrs];
         int rowcnt = 0;
         for (Object[] row: data.buffer) {
             int colcnt = 0;
-            for (int i=0; i < data.featureFieldnrs; i++) {
+            for (int i=0; i < data.fieldnrs; i++) {
                 if (i != data.targetIndex) mat[rowcnt][colcnt++] = (double) row[i];
-                else mat[rowcnt][data.featureFieldnrs-1] = (double) row[i];
+                else mat[rowcnt][data.fieldnrs-1] = (double) row[i];
             }
             rowcnt++;
         }
+
         // check the process.
         assert(data.buffer.size() == rowcnt);
-        
+
+        Matrix A = new Matrix(mat);
+
+        int matrixRowDim = A.getRowDimension();
+        int matrixColDim = A.getColumnDimension();
+
+        // compute X matrix and do feature normalization.
+        Matrix featureMat = A.getMatrix(0, matrixRowDim-1, 0, matrixColDim-2);
+        Matrix tmpMat = MatrixUtils.featureNormalize(featureMat);
+
+        // Matrix tmpMat = featureMat;
+        Matrix X = new Matrix(matrixRowDim, matrixColDim, 1.0);
+        X.setMatrix(0, matrixRowDim-1, 1, matrixColDim-1, tmpMat);
+
+        Matrix y = A.getMatrix(0, matrixRowDim-1, new int[]{matrixColDim-1});
+
+        Matrix theta = new Matrix(matrixColDim, 1);
+
+        double alpha = 0.01;
+        int num_iters = 1500;
+
+        // gradient descent.
+        for (int iter = 1; iter <= num_iters; iter++) {
+            Matrix tmp = X.times(theta).minus(y);
+            theta.minusEquals(X.transpose().times(tmp).times(alpha/matrixRowDim));
+
+            // compute the cost in every iteration.
+            double cost = tmp.transpose().times(tmp).get(0, 0)/(2*matrixRowDim);
+            // System.out.println(cost);
+            logBasic( String.format("iteration %dth, the cost is %f", iter, cost ));
+        }
+
+        // do prediction.
+        Matrix preMat = X.times(theta);
+        // theta.print(1, 4);
+
+        // compare the diff.
+        boolean isCompared = false;
+        if (isCompared) {
+            double[][] arr1 = y.getArray();
+            double[][] arr2 = preMat.getArray();
+            for (int i = 0; i < matrixRowDim; i++) {
+                // System.out.println(String.format("target:%f -> predict:%f", arr1[i][0], arr2[i][0]));
+                logBasic( String.format("target:%f -> predict:%f", arr1[i][0], arr2[i][0]) );
+            }
+        }
+
+        // save the weight value.
+        double [][]thetaVal = theta.getArray();
+        for (int i=0; i<data.fieldnrs; i++) data.weights[i] = thetaVal[i][0];
+
     }
 
     @Override
@@ -94,7 +136,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             RowMetaInterface inputRowMeta = getInputRowMeta();
             data.targetIndex = inputRowMeta.indexOfValue( meta.getTargetField() );
             int featureFieldNumber = inputRowMeta.size();
-            data.featureFieldnrs = featureFieldNumber;
+            data.fieldnrs = featureFieldNumber;
             data.weights = new double[featureFieldNumber];
 
             // Metadata
