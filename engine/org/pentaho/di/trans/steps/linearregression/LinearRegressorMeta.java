@@ -50,9 +50,17 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     @Injection( name = "FOLD_NUM", group = "FIELDS")
     private int foldNum;
 
+    /* the number of folds to validate model */
+    @Injection( name = "ITETATION_NUM", group = "FIELDS")
+    private int iterationNum;
+
     /** order by which fields? */
     @Injection( name = "NAME", group = "FIELDS" )
     private String[] fieldName;
+
+    /** false : feature field, true=target field */
+    @Injection( name = "IS_TARGET", group = "FIELDS" )
+    private boolean[] isTarget;
 
     public LinearRegressorMeta() {
         super(); // allocate BaseStepMeta
@@ -64,20 +72,39 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         regulationValue = 0.1;
         trainDataPercentage = 0.8;
         foldNum = 5;
+        iterationNum = 500;
         int nrfields = 0;
-
         allocate( nrfields );
     }
 
     public void allocate( int nrfields ) {
         fieldName = new String[nrfields]; // order by
+        isTarget = new boolean[nrfields];
+        for (int i=0; i<nrfields; i++) isTarget[i] = false;
     }
 
-    /**
-     * @return Returns the fieldName.
-     */
+    public boolean[] getIsTarget() {
+        return isTarget;
+    }
+
+    public void setIsTarget(boolean[] isTarget) {
+        this.isTarget = isTarget;
+    }
+
     public String[] getFieldName() {
         return fieldName;
+    }
+
+    public int getIterationNum() {
+        return iterationNum;
+    }
+
+    public void setIterationNum(int iterationNum) {
+        this.iterationNum = iterationNum;
+    }
+
+    public void setFieldName(String[] fieldName) {
+        this.fieldName = fieldName;
     }
 
     public String getTargetField() {

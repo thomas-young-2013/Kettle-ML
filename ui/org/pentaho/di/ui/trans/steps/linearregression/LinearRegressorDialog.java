@@ -156,68 +156,6 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         fdSortSize.right = new FormAttachment( 100, 0 );
         wSortSize.setLayoutData( fdSortSize );
 
-        // Free Memory to keep
-        wlFreeMemory = new Label( shell, SWT.RIGHT );
-        wlFreeMemory.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.FreeMemory.Label" ) );
-        wlFreeMemory.setToolTipText( BaseMessages.getString( PKG, "LinearRegressorDialog.FreeMemory.ToolTip" ) );
-        props.setLook( wlFreeMemory );
-        fdlFreeMemory = new FormData();
-        fdlFreeMemory.left = new FormAttachment( 0, 0 );
-        fdlFreeMemory.right = new FormAttachment( middle, -margin );
-        fdlFreeMemory.top = new FormAttachment( wSortSize, margin * 2 );
-        wlFreeMemory.setLayoutData( fdlFreeMemory );
-        wFreeMemory = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-        wFreeMemory.setToolTipText( BaseMessages.getString( PKG, "LinearRegressorDialog.FreeMemory.ToolTip" ) );
-        props.setLook( wFreeMemory );
-        wFreeMemory.addModifyListener( lsMod );
-        fdFreeMemory = new FormData();
-        fdFreeMemory.left = new FormAttachment( middle, 0 );
-        fdFreeMemory.top = new FormAttachment( wSortSize, margin * 2 );
-        fdFreeMemory.right = new FormAttachment( 100, 0 );
-        wFreeMemory.setLayoutData( fdFreeMemory );
-
-        // Using compression for temporary files?
-        wlCompress = new Label( shell, SWT.RIGHT );
-        wlCompress.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.Compress.Label" ) );
-        props.setLook( wlCompress );
-        fdlCompress = new FormData();
-        fdlCompress.left = new FormAttachment( 0, 0 );
-        fdlCompress.right = new FormAttachment( middle, -margin );
-        fdlCompress.top = new FormAttachment( wFreeMemory, margin * 2 );
-        wlCompress.setLayoutData( fdlCompress );
-        wCompress = new CheckBoxVar( transMeta, shell, SWT.CHECK, "" );
-        props.setLook( wCompress );
-        fdCompress = new FormData();
-        fdCompress.left = new FormAttachment( middle, 0 );
-        fdCompress.top = new FormAttachment( wFreeMemory, margin * 2 );
-        fdCompress.right = new FormAttachment( 100, 0 );
-        wCompress.setLayoutData( fdCompress );
-        wCompress.addSelectionListener( new SelectionAdapter() {
-            @Override
-            public void widgetSelected( SelectionEvent e ) {
-                log.logDetailed( "LinearRegressorDialog", "Selection Listener for compress: " + wCompress.getSelection() );
-                input.setChanged();
-            }
-        } );
-
-        // Using compression for temporary files?
-        wlUniqueRows = new Label( shell, SWT.RIGHT );
-        wlUniqueRows.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.UniqueRows.Label" ) );
-        props.setLook( wlUniqueRows );
-        fdlUniqueRows = new FormData();
-        fdlUniqueRows.left = new FormAttachment( 0, 0 );
-        fdlUniqueRows.right = new FormAttachment( middle, -margin );
-        fdlUniqueRows.top = new FormAttachment( wCompress, margin );
-        wlUniqueRows.setLayoutData( fdlUniqueRows );
-        wUniqueRows = new Button( shell, SWT.CHECK );
-        wUniqueRows.setToolTipText( BaseMessages.getString( PKG, "LinearRegressorDialog.UniqueRows.Tooltip" ) );
-        props.setLook( wUniqueRows );
-        fdUniqueRows = new FormData();
-        fdUniqueRows.left = new FormAttachment( middle, 0 );
-        fdUniqueRows.top = new FormAttachment( wCompress, margin );
-        fdUniqueRows.right = new FormAttachment( 100, 0 );
-        wUniqueRows.setLayoutData( fdUniqueRows );
-
         wOK = new Button( shell, SWT.PUSH );
         wOK.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
         wGet = new Button( shell, SWT.PUSH );
@@ -233,7 +171,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         props.setLook( wlFields );
         fdlFields = new FormData();
         fdlFields.left = new FormAttachment( 0, 0 );
-        fdlFields.top = new FormAttachment( wUniqueRows, margin );
+        fdlFields.top = new FormAttachment( wSortSize, margin );
         wlFields.setLayoutData( fdlFields );
 
         final int FieldsRows = input.getFieldName().length;
@@ -244,32 +182,10 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
                                 BaseMessages.getString( PKG, "LinearRegressorDialog.Fieldname.Column" ), ColumnInfo.COLUMN_TYPE_CCOMBO,
                                 new String[] { "" }, false ),
                         new ColumnInfo(
-                                BaseMessages.getString( PKG, "LinearRegressorDialog.Ascending.Column" ), ColumnInfo.COLUMN_TYPE_CCOMBO,
+                                BaseMessages.getString( PKG, "LinearRegressorDialog.isTarget.Column" ), ColumnInfo.COLUMN_TYPE_CCOMBO,
                                 new String[] {
                                         BaseMessages.getString( PKG, "System.Combo.Yes" ),
-                                        BaseMessages.getString( PKG, "System.Combo.No" ) } ),
-                        new ColumnInfo(
-                                BaseMessages.getString( PKG, "LinearRegressorDialog.CaseInsensitive.Column" ),
-                                ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] {
-                                BaseMessages.getString( PKG, "System.Combo.Yes" ),
-                                BaseMessages.getString( PKG, "System.Combo.No" ) } ),
-                        new ColumnInfo(
-                                BaseMessages.getString( PKG, "LinearRegressorDialog.CollatorDisabled.Column" ),
-                                ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] {
-                                BaseMessages.getString( PKG, "System.Combo.Yes" ),
-                                BaseMessages.getString( PKG, "System.Combo.No" ) } ),
-                        new ColumnInfo(
-                                BaseMessages.getString( PKG, "LinearRegressorDialog.CollatorStrength.Column" ),
-                                ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] {
-                                BaseMessages.getString( PKG, "System.Combo.Primary" ),
-                                BaseMessages.getString( PKG, "System.Combo.Secondary" ),
-                                BaseMessages.getString( PKG, "System.Combo.Tertiary" ),
-                                BaseMessages.getString( PKG, "System.Combo.Identical" ) }, true ),
-                        new ColumnInfo(
-                                BaseMessages.getString( PKG, "LinearRegressorDialog.PreSortedField.Column" ),
-                                ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] {
-                                BaseMessages.getString( PKG, "System.Combo.Yes" ),
-                                BaseMessages.getString( PKG, "System.Combo.No" ) } ) };
+                                        BaseMessages.getString( PKG, "System.Combo.No" ) } ) };
 
         wFields =
                 new TableView(
@@ -310,7 +226,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         lsOK = new Listener() {
             @Override
             public void handleEvent( Event e ) {
-                /*ok();*/
+                ok();
             }
         };
         lsGet = new Listener() {
@@ -340,7 +256,6 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         wStepname.addSelectionListener( lsDef );
         wPrefix.addSelectionListener( lsDef );
         wSortSize.addSelectionListener( lsDef );
-        wFreeMemory.addSelectionListener( lsDef );
 
         // Detect X or ALT-F4 or something that kills this window...
         shell.addShellListener( new ShellAdapter() {
@@ -364,7 +279,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         // Set the shell size, based upon previous time...
         setSize();
 
-        /*getData();*/
+        getData();
         input.setChanged( changed );
 
         shell.open();
@@ -396,18 +311,9 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
     /**
      * Copy information from the meta-data input to the dialog fields.
      */
-    /*public void getData() {
-        if ( input.getPrefix() != null ) {
-            wPrefix.setText( input.getPrefix() );
-        }
-        if ( input.getDirectory() != null ) {
-            wSortDir.setText( input.getDirectory() );
-        }
-        wSortSize.setText( Const.NVL( input.getSortSize(), "" ) );
-        wFreeMemory.setText( Const.NVL( input.getFreeMemoryLimit(), "" ) );
-        wCompress.setSelection( input.getCompressFiles() );
-        wCompress.setVariableName( input.getCompressFilesVariable() );
-        wUniqueRows.setSelection( input.isOnlyPassingUniqueRows() );
+    public void getData() {
+        wPrefix.setText(String.valueOf(input.getLearningRate()));
+        wSortSize.setText(String.valueOf(input.getIterationNum()));
 
         Table table = wFields.table;
         if ( input.getFieldName().length > 0 ) {
@@ -417,16 +323,8 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
             TableItem ti = new TableItem( table, SWT.NONE );
             ti.setText( 0, "" + ( i + 1 ) );
             ti.setText( 1, input.getFieldName()[i] );
-            ti.setText( 2, input.getAscending()[i] ? BaseMessages.getString( PKG, "System.Combo.Yes" ) : BaseMessages
+            ti.setText( 2, input.getIsTarget()[i] ? BaseMessages.getString( PKG, "System.Combo.Yes" ) : BaseMessages
                     .getString( PKG, "System.Combo.No" ) );
-            ti.setText( 3, input.getCaseSensitive()[i]
-                    ? BaseMessages.getString( PKG, "System.Combo.Yes" ) : BaseMessages.getString( PKG, "System.Combo.No" ) );
-            ti.setText( 4, input.getCollatorEnabled()[i]
-                    ? BaseMessages.getString( PKG, "System.Combo.Yes" ) : BaseMessages.getString( PKG, "System.Combo.No" ) );
-            ti.setText( 5, input.getCollatorStrength()[i] == 0
-                    ? BaseMessages.getString( PKG, "System.Combo.Primary" ) : Integer.toString( input.getCollatorStrength()[i] ) );
-            ti.setText( 6, input.getPreSortedField()[i]
-                    ? BaseMessages.getString( PKG, "System.Combo.Yes" ) : BaseMessages.getString( PKG, "System.Combo.No" ) );
         }
 
         wFields.setRowNums();
@@ -434,7 +332,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
 
         wStepname.selectAll();
         wStepname.setFocus();
-    }*/
+    }
 
     private void cancel() {
         stepname = null;
@@ -442,7 +340,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         dispose();
     }
 
-    /*private void ok() {
+    private void ok() {
         if ( Utils.isEmpty( wStepname.getText() ) ) {
             return;
         }
@@ -450,38 +348,22 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         stepname = wStepname.getText(); // return value
 
         // copy info to LinearRegressorMeta class (input)
-        input.setPrefix( wPrefix.getText() );
-        input.setDirectory( wSortDir.getText() );
-        input.setSortSize( wSortSize.getText() );
-        input.setFreeMemoryLimit( wFreeMemory.getText() );
-        log.logDetailed( "Sort rows", "Compression is set to " + wCompress.getSelection() );
-        input.setCompressFiles( wCompress.getSelection() );
-        input.setCompressFilesVariable( wCompress.getVariableName() );
-        input.setOnlyPassingUniqueRows( wUniqueRows.getSelection() );
+        input.setLearningRate( Double.parseDouble(wPrefix.getText()));
+        input.setIterationNum(Integer.parseInt(wSortSize.getText()));
 
         // Table table = wFields.table;
         int nrfields = wFields.nrNonEmpty();
 
         input.allocate( nrfields );
 
-        //CHECKSTYLE:Indentation:OFF
-        //CHECKSTYLE:LineLength:OFF
         for ( int i = 0; i < nrfields; i++ ) {
             TableItem ti = wFields.getNonEmpty( i );
             input.getFieldName()[i] = ti.getText( 1 );
-            input.getAscending()[i] = Utils.isEmpty( ti.getText( 2 ) ) || BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( ti.getText( 2 ) );
-            input.getCaseSensitive()[i] = BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( ti.getText( 3 ) );
-            input.getCollatorEnabled()[i] = BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( ti.getText( 4 ) );
-            if ( ti.getText( 5 ) == "" ) {
-                input.getCollatorStrength()[i] = Integer.parseInt( BaseMessages.getString( PKG, "System.Combo.Primary" ) );
-            } else {
-                input.getCollatorStrength()[i] = Integer.parseInt( ti.getText( 5 ) );
-            }
-            input.getPreSortedField()[i] = BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( ti.getText( 6 ) );
+            input.getIsTarget()[i] = Utils.isEmpty( ti.getText( 2 ) ) || BaseMessages.getString( PKG, "System.Combo.Yes" ).equalsIgnoreCase( ti.getText( 2 ) );
         }
 
         dispose();
-    }*/
+    }
 
     private void get() {
         try {
