@@ -2,13 +2,19 @@ package org.pentaho.di.trans.steps.linearregression;
 
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
+import org.pentaho.di.core.Const;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
+import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.util.IntegerPluginProperty;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
+import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
@@ -18,8 +24,11 @@ import org.pentaho.di.trans.step.*;
 import org.pentaho.di.trans.step.errorhandling.Stream;
 import org.pentaho.di.trans.step.errorhandling.StreamIcon;
 import org.pentaho.di.trans.step.errorhandling.StreamInterface;
+import org.pentaho.di.trans.steps.sort.SortRowsMeta;
 import org.pentaho.metastore.api.IMetaStore;
+import org.w3c.dom.Node;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -64,23 +73,6 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
 
     public LinearRegressorMeta() {
         super(); // allocate BaseStepMeta
-    }
-
-    @Override
-    public void setDefault() {
-        learningRate = 0.01;
-        regulationValue = 0.1;
-        trainDataPercentage = 0.8;
-        foldNum = 5;
-        iterationNum = 500;
-        int nrfields = 0;
-        allocate( nrfields );
-    }
-
-    public void allocate( int nrfields ) {
-        fieldName = new String[nrfields]; // order by
-        isTarget = new boolean[nrfields];
-        for (int i=0; i<nrfields; i++) isTarget[i] = false;
     }
 
     public boolean[] getIsTarget() {
@@ -147,43 +139,138 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         this.foldNum = foldNum;
     }
 
+
     @Override
-    public void readRep(Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
+    public void loadXML(Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
+        readData( stepnode );
+    }
+
+    public void allocate( int nrfields ) {
+        fieldName = new String[nrfields]; // order by
+        isTarget = new boolean[nrfields];
+    }
+
+    @Override
+    public Object clone() {
+        LinearRegressorMeta retval = (LinearRegressorMeta) super.clone();
+
+        int nrfields = fieldName.length;
+
+        retval.allocate( nrfields );
+        System.arraycopy( fieldName, 0, retval.fieldName, 0, nrfields );
+        System.arraycopy( isTarget, 0, retval.isTarget, 0, nrfields );
+
+        return retval;
+    }
+
+    private void readData( Node stepnode ) throws KettleXMLException {
         try {
-            int nrKeys = rep.countNrStepAttributes( id_step, "key_field" );
-            int nrValues = rep.countNrStepAttributes( id_step, "value_field" );
+            learningRate = Double.parseDouble(XMLHandler.getTagValue( stepnode, "learning_rate" ));
+            iterationNum = Integer.parseInt(XMLHandler.getTagValue( stepnode, "iteration_num" ));
 
-            List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-            StreamInterface referenceStream = infoStreams.get( 0 );
-            StreamInterface compareStream = infoStreams.get( 1 );
+            Node fields = XMLHandler.getSubNode( stepnode, "fields" );
+            int nrfields = XMLHandler.countNodes( fields, "field" );
 
-            referenceStream.setSubject( rep.getStepAttributeString( id_step, "reference" ) );
-            compareStream.setSubject( rep.getStepAttributeString( id_step, "compare" ) );
+            allocate( nrfields );
+
+            for ( int i = 0; i < nrfields; i++ ) {
+                Node fnode = XMLHandler.getSubNodeByNr( fields, "field", i );
+
+                fieldName[i] = XMLHandler.getTagValue( fnode, "field_name" );
+                isTarget[i] = "Y".equalsIgnoreCase(XMLHandler.getTagValue(fnode, "is_target"));
+            }
         } catch ( Exception e ) {
-            throw new KettleException( BaseMessages.getString(
-                    PKG, "MergeRowsMeta.Exception.UnexpectedErrorReadingStepInfo" ), e );
+            throw new KettleXMLException( "Unable to load step info from XML", e );
         }
     }
 
     @Override
-    public void searchInfoAndTargetSteps( List<StepMeta> steps ) {
-        for ( StreamInterface stream : getStepIOMeta().getInfoStreams() ) {
-            stream.setStepMeta( StepMeta.findStep( steps, (String) stream.getSubject() ) );
+    public void setDefault() {
+        learningRate = 0.01;
+        regulationValue = 0.1;
+        trainDataPercentage = 0.8;
+        foldNum = 5;
+        iterationNum = 500;
+        int nrfields = 0;
+        allocate( nrfields );
+    }
+
+    @Override
+    public String getXML() {
+        StringBuilder retval = new StringBuilder( 256 );
+
+        retval.append( "      " ).append( XMLHandler.addTagValue( "learning_rate", learningRate ) );
+        retval.append( "      " ).append( XMLHandler.addTagValue( "iteration_num", iterationNum ) );
+
+        retval.append( "    <fields>" ).append( Const.CR );
+        for ( int i = 0; i < fieldName.length; i++ ) {
+            retval.append( "      <field>" ).append( Const.CR );
+            retval.append( "        " ).append( XMLHandler.addTagValue( "field_name", fieldName[i] ) );
+            retval.append( "        " ).append( XMLHandler.addTagValue( "is_target", isTarget[i] ) );
+            retval.append( "      </field>" ).append( Const.CR );
+        }
+        retval.append( "    </fields>" ).append( Const.CR );
+
+        return retval.toString();
+    }
+
+    @Override
+    public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
+        try {
+            learningRate = Double.parseDouble(rep.getStepAttributeString( id_step, "learning_rate" ));
+            iterationNum = Integer.parseInt(rep.getStepAttributeString( id_step, "iteration_num" ));
+
+            int nrfields = rep.countNrStepAttributes( id_step, "field_name" );
+
+            allocate( nrfields );
+
+            for ( int i = 0; i < nrfields; i++ ) {
+                fieldName[i] = rep.getStepAttributeString( id_step, i, "field_name" );
+                isTarget[i] = rep.getStepAttributeBoolean( id_step, i, "is_target" );
+            }
+        } catch ( Exception e ) {
+            throw new KettleException( "Unexpected error reading step information from the repository", e );
         }
     }
 
     @Override
     public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
         try {
-            List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-            StreamInterface referenceStream = infoStreams.get( 0 );
-            StreamInterface compareStream = infoStreams.get( 1 );
+            rep.saveStepAttribute( id_transformation, id_step, "learning_rate", learningRate );
+            rep.saveStepAttribute( id_transformation, id_step, "iteration_num", iterationNum );
 
-            rep.saveStepAttribute( id_transformation, id_step, "reference", referenceStream.getStepname() );
-            rep.saveStepAttribute( id_transformation, id_step, "compare", compareStream.getStepname() );
+            for ( int i = 0; i < fieldName.length; i++ ) {
+                rep.saveStepAttribute( id_transformation, id_step, i, "field_name", fieldName[i] );
+                rep.saveStepAttribute( id_transformation, id_step, i, "is_target", isTarget[i] );
+            }
         } catch ( Exception e ) {
-            throw new KettleException( BaseMessages.getString( PKG, "MergeRowsMeta.Exception.UnableToSaveStepInfo" )
-                    + id_step, e );
+            throw new KettleException( "Unable to save step information to the repository for id_step=" + id_step, e );
+        }
+    }
+
+    @Override
+    public void getFields( RowMetaInterface inputRowMeta, String name, RowMetaInterface[] info, StepMeta nextStep,
+                           VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
+        // Set the sorted properties: ascending/descending
+        for ( int i = 0; i < fieldName.length; i++ ) {
+            int idx = inputRowMeta.indexOfValue( fieldName[i] );
+            if ( idx >= 0 ) {
+                ValueMetaInterface valueMeta = inputRowMeta.getValueMeta( idx );
+                // Also see if lazy conversion is active on these key fields.
+                // If so we want to automatically convert them to the normal storage type.
+                // This will improve performance, see also: PDI-346
+                //
+                valueMeta.setStorageType( ValueMetaInterface.STORAGE_TYPE_NORMAL );
+                valueMeta.setStorageMetadata( null );
+            }
+        }
+
+    }
+
+    @Override
+    public void searchInfoAndTargetSteps( List<StepMeta> steps ) {
+        for ( StreamInterface stream : getStepIOMeta().getInfoStreams() ) {
+            stream.setStepMeta( StepMeta.findStep( steps, (String) stream.getSubject() ) );
         }
     }
 
@@ -195,50 +282,56 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         return null;
     }
 
-    @Override
-    public void getFields(RowMetaInterface r, String name, RowMetaInterface[] info, StepMeta nextStep,
-                          VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
-        // We don't have any input fields here in "r" as they are all info fields.
-        // So we just merge in the info fields.
-        //
-        if ( info != null ) {
-            boolean found = false;
-            for ( int i = 0; i < info.length && !found; i++ ) {
-                if ( info[i] != null ) {
-                    r.mergeRowMeta( info[i] );
-                    found = true;
-                }
-            }
-        }
-
-    }
 
     @Override
-    public void check(List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
-                      RowMetaInterface prev, String[] input, String[] output, RowMetaInterface info, VariableSpace space,
-                      Repository repository, IMetaStore metaStore ) {
+    public void check( List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
+                       RowMetaInterface prev, String[] input, String[] output, RowMetaInterface info, VariableSpace space,
+                       Repository repository, IMetaStore metaStore ) {
         CheckResult cr;
 
-        List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-        StreamInterface referenceStream = infoStreams.get( 0 );
-        StreamInterface compareStream = infoStreams.get( 1 );
-
-        if ( referenceStream.getStepname() != null && compareStream.getStepname() != null ) {
+        if ( prev != null && prev.size() > 0 ) {
             cr =
                     new CheckResult( CheckResultInterface.TYPE_RESULT_OK, BaseMessages.getString(
-                            PKG, "MergeRowsMeta.CheckResult.SourceStepsOK" ), stepMeta );
+                            PKG, "LinearRegressorMeta.CheckResult.FieldsReceived", "" + prev.size() ), stepMeta );
             remarks.add( cr );
-        } else if ( referenceStream.getStepname() == null && compareStream.getStepname() == null ) {
-            cr =
-                    new CheckResult( CheckResultInterface.TYPE_RESULT_ERROR, BaseMessages.getString(
-                            PKG, "MergeRowsMeta.CheckResult.SourceStepsMissing" ), stepMeta );
-            remarks.add( cr );
+
+            String error_message = "";
+            boolean error_found = false;
+
+            // Starting from selected fields in ...
+            for ( int i = 0; i < fieldName.length; i++ ) {
+                int idx = prev.indexOfValue( fieldName[i] );
+                if ( idx < 0 ) {
+                    error_message += "\t\t" + fieldName[i] + Const.CR;
+                    error_found = true;
+                }
+            }
+            if ( error_found ) {
+                error_message = BaseMessages.getString( PKG, "LinearRegressorMeta.CheckResult.SortKeysNotFound", error_message );
+
+                cr = new CheckResult( CheckResultInterface.TYPE_RESULT_ERROR, error_message, stepMeta );
+                remarks.add( cr );
+            } else {
+                if ( fieldName.length > 0 ) {
+                    cr =
+                            new CheckResult( CheckResultInterface.TYPE_RESULT_OK, BaseMessages.getString(
+                                    PKG, "LinearRegressorMeta.CheckResult.AllSortKeysFound" ), stepMeta );
+                    remarks.add( cr );
+                } else {
+                    cr =
+                            new CheckResult( CheckResultInterface.TYPE_RESULT_ERROR, BaseMessages.getString(
+                                    PKG, "LinearRegressorMeta.CheckResult.NoSortKeysEntered" ), stepMeta );
+                    remarks.add( cr );
+                }
+            }
+
         } else {
             cr =
-                    new CheckResult( CheckResultInterface.TYPE_RESULT_OK, BaseMessages.getString(
-                            PKG, "MergeRowsMeta.CheckResult.OneSourceStepMissing" ), stepMeta );
+                    new CheckResult( CheckResultInterface.TYPE_RESULT_ERROR, BaseMessages.getString(
+                            PKG, "LinearRegressorMeta.CheckResult.NoFields" ), stepMeta );
             remarks.add( cr );
         }
+
     }
 
     @Override
@@ -250,33 +343,6 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     @Override
     public StepDataInterface getStepData() {
         return new LinearRegressorData();
-    }
-
-    /**
-     * Returns the Input/Output metadata for this step.
-     */
-    @Override
-    public StepIOMetaInterface getStepIOMeta() {
-        if ( ioMeta == null ) {
-
-            ioMeta = new StepIOMeta( true, true, false, false, false, false );
-
-            ioMeta.addStream( new Stream( StreamInterface.StreamType.INFO, null, BaseMessages.getString(
-                    PKG, "MergeRowsMeta.InfoStream.FirstStream.Description" ), StreamIcon.INFO, null ) );
-            ioMeta.addStream( new Stream( StreamInterface.StreamType.INFO, null, BaseMessages.getString(
-                    PKG, "MergeRowsMeta.InfoStream.SecondStream.Description" ), StreamIcon.INFO, null ) );
-        }
-
-        return ioMeta;
-    }
-
-    @Override
-    public void resetStepIoMeta() {
-    }
-
-    @Override
-    public TransMeta.TransformationType[] getSupportedTransformationTypes() {
-        return new TransMeta.TransformationType[] { TransMeta.TransformationType.Normal, };
     }
 
 }

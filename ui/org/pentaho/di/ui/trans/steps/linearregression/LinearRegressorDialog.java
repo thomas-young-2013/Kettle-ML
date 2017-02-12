@@ -249,7 +249,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         lsDef = new SelectionAdapter() {
             @Override
             public void widgetDefaultSelected( SelectionEvent e ) {
-                /*ok();*/
+                ok();
             }
         };
 
@@ -353,7 +353,6 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
 
         // Table table = wFields.table;
         int nrfields = wFields.nrNonEmpty();
-
         input.allocate( nrfields );
 
         for ( int i = 0; i < nrfields; i++ ) {
@@ -372,7 +371,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
                 TableItemInsertListener insertListener = new TableItemInsertListener() {
                     @Override
                     public boolean tableItemInserted( TableItem tableItem, ValueMetaInterface v ) {
-                        tableItem.setText( 2, BaseMessages.getString( PKG, "System.Combo.Yes" ) );
+                        tableItem.setText( 2, BaseMessages.getString( PKG, "System.Combo.No" ) );
                         return true;
                     }
                 };
