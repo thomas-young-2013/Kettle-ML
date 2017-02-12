@@ -67,8 +67,32 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     @Injection( name = "IS_TARGET", group = "FIELDS" )
     private boolean[] isTarget;
 
+    /** true=weight info was saved to file given */
+    @Injection( name = "WEIGHT_SAVED", group = "FIELDS" )
+    private boolean weightSaved;
+
+    /** filename of weight file */
+    @Injection( name = "WEIGHT_FILE_NAME", group = "FIELDS" )
+    private String weightFileName;
+
     public LinearRegressorMeta() {
         super(); // allocate BaseStepMeta
+    }
+
+    public String getWeightFileName() {
+        return weightFileName;
+    }
+
+    public void setWeightFileName(String weightFileName) {
+        this.weightFileName = weightFileName;
+    }
+
+    public boolean getWeightSaved() {
+        return weightSaved;
+    }
+
+    public void setWeightSaved(boolean weightSaved) {
+        this.weightSaved = weightSaved;
     }
 
     public boolean[] getIsTarget() {
@@ -180,6 +204,7 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         trainDataPercentage = 0.8;
         foldNum = 5;
         iterationNum = 500;
+        weightSaved = false;
         int nrfields = 0;
         allocate( nrfields );
     }

@@ -129,9 +129,16 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
             // set the target field's index.
             RowMetaInterface inputRowMeta = getInputRowMeta();
+            // int featureFieldNumber = inputRowMeta.size();
             int featureFieldNumber = inputRowMeta.size();
+            String targetFieldName = "";
             for (int i=0; i<featureFieldNumber; i++) {
-                if (meta.getIsTarget()[i]) data.targetIndex = i;
+                if (meta.getIsTarget()[i]) targetFieldName = meta.getFieldName()[i];
+            }
+
+            // find target field index.
+            for (int i = 0; i < inputRowMeta.getFieldNames().length; i++) {
+                if (targetFieldName.equalsIgnoreCase(inputRowMeta.getFieldNames()[i])) data.targetIndex = i;
             }
 
             data.fieldnrs = featureFieldNumber;
@@ -158,6 +165,11 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         if ( r == null ) {
             // add linear algorithm here.
             this.doLinearRegression();
+
+            // save weights to a given file.
+            if (meta.getWeightSaved()) {
+
+            }
             // pass the weight to next step
             putRow( data.outputRowMeta, data.weights );
 
