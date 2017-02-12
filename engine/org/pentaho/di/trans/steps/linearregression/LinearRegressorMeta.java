@@ -39,10 +39,6 @@ import java.util.List;
 public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterface {
     private static Class<?> PKG = LinearRegressorMeta.class; // for i18n purposes, needed by Translator2!!
 
-    /** target field's name*/
-    @Injection( name = "TARGET_FIELD", group = "FIELDS" )
-    private String targetField;
-
     /* learning rate */
     @Injection( name = "LEARNING_RATE", group = "FIELDS")
     private double learningRate;
@@ -99,13 +95,6 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         this.fieldName = fieldName;
     }
 
-    public String getTargetField() {
-        return targetField;
-    }
-
-    public void setTargetField(String targetField) {
-        this.targetField = targetField;
-    }
 
     public double getLearningRate() {
         return learningRate;
@@ -249,22 +238,26 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     }
 
     @Override
-    public void getFields( RowMetaInterface inputRowMeta, String name, RowMetaInterface[] info, StepMeta nextStep,
+    public void getFields( RowMetaInterface r, String name, RowMetaInterface[] info, StepMeta nextStep,
                            VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
-        // Set the sorted properties: ascending/descending
-        for ( int i = 0; i < fieldName.length; i++ ) {
-            int idx = inputRowMeta.indexOfValue( fieldName[i] );
-            if ( idx >= 0 ) {
-                ValueMetaInterface valueMeta = inputRowMeta.getValueMeta( idx );
-                // Also see if lazy conversion is active on these key fields.
-                // If so we want to automatically convert them to the normal storage type.
-                // This will improve performance, see also: PDI-346
-                //
-                valueMeta.setStorageType( ValueMetaInterface.STORAGE_TYPE_NORMAL );
-                valueMeta.setStorageMetadata( null );
+        // We don't have any input fields here in "r" as they are all info fields.
+        // So we just merge in the info fields.
+        //
+        if ( info != null ) {
+            for ( int i = 0; i < info.length; i++ ) {
+                if ( info[i] != null ) {
+                    r.mergeRowMeta( info[i], name );
+                }
             }
         }
 
+        for ( int i = 0; i < r.size(); i++ ) {
+            ValueMetaInterface vmi = r.getValueMeta( i );
+            if ( vmi != null && Utils.isEmpty( vmi.getName() ) ) {
+                vmi.setOrigin( name );
+            }
+        }
+        return;
     }
 
     @Override

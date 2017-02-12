@@ -63,7 +63,9 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
         // compute X matrix and do feature normalization.
         Matrix featureMat = A.getMatrix(0, matrixRowDim-1, 0, matrixColDim-2);
-        Matrix tmpMat = MatrixUtils.featureNormalize(featureMat);
+        boolean isRegu = false;
+        Matrix tmpMat = featureMat;
+        if (isRegu) tmpMat = MatrixUtils.featureNormalize(featureMat);
 
         // Matrix tmpMat = featureMat;
         Matrix X = new Matrix(matrixRowDim, matrixColDim, 1.0);
@@ -73,8 +75,8 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
         Matrix theta = new Matrix(matrixColDim, 1);
 
-        double alpha = 0.01;
-        int num_iters = 1500;
+        double alpha = meta.getLearningRate();
+        int num_iters = meta.getIterationNum();
 
         // gradient descent.
         for (int iter = 1; iter <= num_iters; iter++) {
@@ -92,7 +94,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         // theta.print(1, 4);
 
         // compare the diff.
-        boolean isCompared = false;
+        boolean isCompared = true;
         if (isCompared) {
             double[][] arr1 = y.getArray();
             double[][] arr2 = preMat.getArray();
@@ -127,8 +129,11 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
             // set the target field's index.
             RowMetaInterface inputRowMeta = getInputRowMeta();
-            data.targetIndex = inputRowMeta.indexOfValue( meta.getTargetField() );
             int featureFieldNumber = inputRowMeta.size();
+            for (int i=0; i<featureFieldNumber; i++) {
+                if (meta.getIsTarget()[i]) data.targetIndex = i;
+            }
+
             data.fieldnrs = featureFieldNumber;
             data.weights = new Object[featureFieldNumber];
 
@@ -137,7 +142,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );*/
 
             RowMeta rowMeta = new RowMeta();
-            rowMeta.addValueMeta(new ValueMetaNumber("constantField", 10, 6));
+            rowMeta.addValueMeta(new ValueMetaNumber("constant_field", 10, 6));
 
             for ( int i = 0; i < featureFieldNumber; i++) {
                 if( i != data.targetIndex )
@@ -145,6 +150,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             }
 
             data.outputRowMeta = rowMeta;
+            meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );
 
         } // end if first
 
