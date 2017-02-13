@@ -36,11 +36,6 @@ import java.util.*;
 public class LinearRegressorDialog extends BaseStepDialog implements StepDialogInterface {
     private static Class<?> PKG = LinearRegressorMeta.class; // for i18n purposes, needed by Translator2!!
 
-    private Label wlSortDir;
-    private Button wbSortDir;
-    private TextVar wSortDir;
-    private FormData fdlSortDir, fdbSortDir, fdSortDir;
-
     private Label wlPrefix;
     private Text wPrefix;
     private FormData fdlPrefix, fdPrefix;
@@ -49,17 +44,14 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
     private TextVar wSortSize;
     private FormData fdlSortSize, fdSortSize;
 
-    private Label wlFreeMemory;
-    private TextVar wFreeMemory;
-    private FormData fdlFreeMemory, fdFreeMemory;
+    private Label wlCount;
+    private Button wCount;
+    private FormData fdlCount, fdCount;
 
-    private Label wlCompress;
-    private CheckBoxVar wCompress;
-    private FormData fdlCompress, fdCompress;
-
-    private Label wlUniqueRows;
-    private Button wUniqueRows;
-    private FormData fdlUniqueRows, fdUniqueRows;
+    private Label wlFilename;
+    private Button wbFilename;
+    private TextVar wFilename;
+    private FormData fdlFilename, fdbFilename, fdFilename;
 
     private Label wlFields;
     private TableView wFields;
@@ -158,6 +150,49 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         fdSortSize.right = new FormAttachment( 100, 0 );
         wSortSize.setLayoutData( fdSortSize );
 
+        // Filename line
+        wlFilename = new Label( shell, SWT.RIGHT );
+        wlFilename.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.fileDirSaved.Label" ) );
+        props.setLook( wlFilename );
+        fdlFilename = new FormData();
+        fdlFilename.left = new FormAttachment( 0, 0 );
+        fdlFilename.top = new FormAttachment( wSortSize, margin );
+        fdlFilename.right = new FormAttachment( middle, -margin );
+        wlFilename.setLayoutData( fdlFilename );
+
+        wbFilename = new Button( shell, SWT.PUSH | SWT.CENTER );
+        props.setLook( wbFilename );
+        wbFilename.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
+        fdbFilename = new FormData();
+        fdbFilename.right = new FormAttachment( 100, 0 );
+        fdbFilename.top = new FormAttachment( wSortSize, 0 );
+        wbFilename.setLayoutData( fdbFilename );
+
+        wFilename = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+        props.setLook( wFilename );
+        wFilename.addModifyListener( lsMod );
+        fdFilename = new FormData();
+        fdFilename.left = new FormAttachment( middle, 0 );
+        fdFilename.top = new FormAttachment( wSortSize, margin );
+        fdFilename.right = new FormAttachment( wbFilename, -margin );
+        wFilename.setLayoutData( fdFilename );
+
+/*        wlCountField = new Label( shell, SWT.LEFT );
+        wlCountField.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.fileDirSaved.Label" ) );
+        props.setLook( wlCountField );
+        fdlCountField = new FormData();
+        fdlCountField.left = new FormAttachment( wCount, margin );
+        fdlCountField.top = new FormAttachment( wSortSize, margin );
+        wlCountField.setLayoutData( fdlCountField );
+        wCountField = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+        props.setLook( wCountField );
+        wCountField.addModifyListener( lsMod );
+        fdCountField = new FormData();
+        fdCountField.left = new FormAttachment( wlCountField, margin );
+        fdCountField.top = new FormAttachment( wSortSize, margin );
+        fdCountField.right = new FormAttachment( 100, 0 );
+        wCountField.setLayoutData( fdCountField );*/
+
         wOK = new Button( shell, SWT.PUSH );
         wOK.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
         wGet = new Button( shell, SWT.PUSH );
@@ -173,7 +208,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         props.setLook( wlFields );
         fdlFields = new FormData();
         fdlFields.left = new FormAttachment( 0, 0 );
-        fdlFields.top = new FormAttachment( wSortSize, margin );
+        fdlFields.top = new FormAttachment( wFilename, margin );
         wlFields.setLayoutData( fdlFields );
 
         final int FieldsRows = input.getFieldName().length;
@@ -292,6 +327,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         }
         return stepname;
     }
+
 
     protected void setComboBoxes() {
         // Something was changed in the row.
