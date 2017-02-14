@@ -44,9 +44,13 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
     private TextVar wSortSize;
     private FormData fdlSortSize, fdSortSize;
 
-    private Label wlCount;
-    private Button wCount;
-    private FormData fdlCount, fdCount;
+    private Label wlIterationGap;
+    private TextVar wIterationGap;
+    private FormData fdlIterationGap, fdIterationGap;
+
+    private Label wlFileIsCommand;
+    private Button wFileIsCommand;
+    private FormData fdlFileIsCommand, fdFileIsCommand;
 
     private Label wlFilename;
     private Button wbFilename;
@@ -150,13 +154,52 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         fdSortSize.right = new FormAttachment( 100, 0 );
         wSortSize.setLayoutData( fdSortSize );
 
-        // Filename line
+        // iterations info output gap.
+        wlIterationGap = new Label( shell, SWT.RIGHT );
+        wlIterationGap.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.iterationGap.Label" ) );
+        props.setLook( wlIterationGap );
+        fdlIterationGap = new FormData();
+        fdlIterationGap.left = new FormAttachment( 0, 0 );
+        fdlIterationGap.right = new FormAttachment( middle, -margin );
+        fdlIterationGap.top = new FormAttachment( wSortSize, margin * 2 );
+        wlIterationGap.setLayoutData( fdlIterationGap );
+        wIterationGap = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+        props.setLook( wIterationGap );
+        wIterationGap.addModifyListener( lsMod );
+        fdIterationGap = new FormData();
+        fdIterationGap.left = new FormAttachment( middle, 0 );
+        fdIterationGap.top = new FormAttachment( wSortSize, margin * 2 );
+        fdIterationGap.right = new FormAttachment( 100, 0 );
+        wIterationGap.setLayoutData( fdIterationGap );
+
+        // compare the predict with the target.
+        wlFileIsCommand = new Label( shell, SWT.RIGHT );
+        wlFileIsCommand.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.isCompared.Label" ) );
+        props.setLook( wlFileIsCommand );
+        fdlFileIsCommand = new FormData();
+        fdlFileIsCommand.left = new FormAttachment( 0, 0 );
+        fdlFileIsCommand.top = new FormAttachment( wIterationGap, margin );
+        fdlFileIsCommand.right = new FormAttachment( middle, -margin );
+        wlFileIsCommand.setLayoutData( fdlFileIsCommand );
+        wFileIsCommand = new Button( shell, SWT.CHECK );
+        props.setLook( wFileIsCommand );
+        fdFileIsCommand = new FormData();
+        fdFileIsCommand.left = new FormAttachment( middle, 0 );
+        fdFileIsCommand.top = new FormAttachment( wIterationGap, margin );
+        fdFileIsCommand.right = new FormAttachment( 100, 0 );
+        wFileIsCommand.setLayoutData( fdFileIsCommand );
+        wFileIsCommand.addSelectionListener( new SelectionAdapter() {
+            public void widgetSelected( SelectionEvent e ) {
+                input.setChanged();
+            }
+        } );
+
         wlFilename = new Label( shell, SWT.RIGHT );
         wlFilename.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.fileDirSaved.Label" ) );
         props.setLook( wlFilename );
         fdlFilename = new FormData();
         fdlFilename.left = new FormAttachment( 0, 0 );
-        fdlFilename.top = new FormAttachment( wSortSize, margin );
+        fdlFilename.top = new FormAttachment( wFileIsCommand, margin );
         fdlFilename.right = new FormAttachment( middle, -margin );
         wlFilename.setLayoutData( fdlFilename );
 
@@ -165,7 +208,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         wbFilename.setText( BaseMessages.getString( PKG, "System.Button.Browse" ) );
         fdbFilename = new FormData();
         fdbFilename.right = new FormAttachment( 100, 0 );
-        fdbFilename.top = new FormAttachment( wSortSize, 0 );
+        fdbFilename.top = new FormAttachment( wFileIsCommand, 0 );
         wbFilename.setLayoutData( fdbFilename );
 
         wFilename = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
@@ -173,25 +216,9 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         wFilename.addModifyListener( lsMod );
         fdFilename = new FormData();
         fdFilename.left = new FormAttachment( middle, 0 );
-        fdFilename.top = new FormAttachment( wSortSize, margin );
+        fdFilename.top = new FormAttachment( wFileIsCommand, margin );
         fdFilename.right = new FormAttachment( wbFilename, -margin );
         wFilename.setLayoutData( fdFilename );
-
-/*        wlCountField = new Label( shell, SWT.LEFT );
-        wlCountField.setText( BaseMessages.getString( PKG, "LinearRegressorDialog.fileDirSaved.Label" ) );
-        props.setLook( wlCountField );
-        fdlCountField = new FormData();
-        fdlCountField.left = new FormAttachment( wCount, margin );
-        fdlCountField.top = new FormAttachment( wSortSize, margin );
-        wlCountField.setLayoutData( fdlCountField );
-        wCountField = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-        props.setLook( wCountField );
-        wCountField.addModifyListener( lsMod );
-        fdCountField = new FormData();
-        fdCountField.left = new FormAttachment( wlCountField, margin );
-        fdCountField.top = new FormAttachment( wSortSize, margin );
-        fdCountField.right = new FormAttachment( 100, 0 );
-        wCountField.setLayoutData( fdCountField );*/
 
         wOK = new Button( shell, SWT.PUSH );
         wOK.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
@@ -290,9 +317,40 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
             }
         };
 
+        // set change listener.
         wStepname.addSelectionListener( lsDef );
         wPrefix.addSelectionListener( lsDef );
         wSortSize.addSelectionListener( lsDef );
+        wIterationGap.addSelectionListener(lsDef);
+
+        wbFilename.addSelectionListener( new SelectionAdapter() {
+            public void widgetSelected( SelectionEvent e ) {
+                FileDialog dialog = new FileDialog( shell, SWT.SAVE );
+                dialog.setFilterExtensions( new String[] { "*.txt", "*.csv", "*" } );
+                if ( wFilename.getText() != null ) {
+                    dialog.setFileName( transMeta.environmentSubstitute( wFilename.getText() ) );
+                }
+                dialog.setFilterNames( new String[] {
+                        BaseMessages.getString( PKG, "System.FileType.TextFiles" ),
+                        BaseMessages.getString( PKG, "System.FileType.CSVFiles" ),
+                        BaseMessages.getString( PKG, "System.FileType.AllFiles" ) } );
+                if ( dialog.open() != null ) {
+                    if (dialog.getFileName() != null) {
+                        // The extension is filled in and matches the end
+                        // of the selected file => Strip off the extension.
+                        String fileName = dialog.getFileName();
+                        wFilename.setText( dialog.getFilterPath()
+                                + System.getProperty( "file.separator" )
+                                + fileName.substring( 0, fileName.length()) );
+                        input.setChanged();
+                    } else {
+                        wFilename.setText( dialog.getFilterPath()
+                                + System.getProperty( "file.separator" ) + dialog.getFileName() );
+                    }
+                }
+            }
+        } );
+
 
         // Detect X or ALT-F4 or something that kills this window...
         shell.addShellListener( new ShellAdapter() {
@@ -352,6 +410,9 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
     public void getData() {
         wPrefix.setText(String.valueOf(input.getLearningRate()));
         wSortSize.setText(String.valueOf(input.getIterationNum()));
+        wFilename.setText(input.getWeightFileName()==null?"":"");
+        wIterationGap.setText(String.valueOf(input.getDisplay_iteration_gap()));
+        wFileIsCommand.setSelection(input.isCompared());
 
         Table table = wFields.table;
         if ( input.getFieldName().length > 0 ) {
@@ -388,6 +449,10 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
         // copy info to LinearRegressorMeta class (input)
         input.setLearningRate( Double.parseDouble(wPrefix.getText()));
         input.setIterationNum(Integer.parseInt(wSortSize.getText()));
+
+        input.setWeightFileName(wFilename.getText());
+        input.setDisplay_iteration_gap(Integer.parseInt(wIterationGap.getText()));
+        input.setCompared(wFileIsCommand.getSelection());
 
         // Table table = wFields.table;
         int nrfields = wFields.nrNonEmpty();

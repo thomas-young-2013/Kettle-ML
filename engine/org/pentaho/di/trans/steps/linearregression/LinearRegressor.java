@@ -77,6 +77,8 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
         double alpha = meta.getLearningRate();
         int num_iters = meta.getIterationNum();
+        // get display gap.
+        boolean isDisplay = meta.getDisplay_iteration_gap()>0;
 
         // gradient descent.
         for (int iter = 1; iter <= num_iters; iter++) {
@@ -86,7 +88,8 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             // compute the cost in every iteration.
             double cost = tmp.transpose().times(tmp).get(0, 0)/(2*matrixRowDim);
             // System.out.println(cost);
-            logBasic( String.format("iteration %dth, the cost is %f", iter, cost ));
+            if (isDisplay && iter % meta.getDisplay_iteration_gap() == 0)
+                logBasic( String.format("iteration %dth, the cost is %f", iter, cost ));
         }
 
         // do prediction.
@@ -94,8 +97,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         // theta.print(1, 4);
 
         // compare the diff.
-        boolean isCompared = true;
-        if (isCompared) {
+        if (meta.isCompared()) {
             double[][] arr1 = y.getArray();
             double[][] arr2 = preMat.getArray();
             for (int i = 0; i < matrixRowDim; i++) {
@@ -108,6 +110,10 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         double [][]thetaVal = theta.getArray();
         for (int i=0; i<data.fieldnrs; i++) data.weights[i] = thetaVal[i][0];
 
+        // save the weight value to file
+        if (meta.getWeightFileName() != null && meta.getWeightFileName() != "") {
+
+        }
     }
 
     @Override
@@ -163,13 +169,8 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
         // it is not first row and it is null
         if ( r == null ) {
-            // add linear algorithm here.
+            // add linear algorithm here & save the weight if necessary.
             this.doLinearRegression();
-
-            // save weights to a given file.
-            if (meta.getWeightSaved()) {
-
-            }
             // pass the weight to next step
             putRow( data.outputRowMeta, data.weights );
 

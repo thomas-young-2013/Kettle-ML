@@ -67,16 +67,36 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     @Injection( name = "IS_TARGET", group = "FIELDS" )
     private boolean[] isTarget;
 
-    /** true=weight info was saved to file given */
-    @Injection( name = "WEIGHT_SAVED", group = "FIELDS" )
-    private boolean weightSaved;
-
     /** filename of weight file */
     @Injection( name = "WEIGHT_FILE_NAME", group = "FIELDS" )
     private String weightFileName;
 
+    /** set the iteration gap between display */
+    @Injection( name = "DISPLAY_ITERATION_GAP", group = "FIELDS" )
+    private int display_iteration_gap;
+
+    /** set the iteration gap between display */
+    @Injection( name = "DISPLAY_ITERATION_GAP", group = "FIELDS" )
+    private boolean isCompared;
+
     public LinearRegressorMeta() {
         super(); // allocate BaseStepMeta
+    }
+
+    public int getDisplay_iteration_gap() {
+        return display_iteration_gap;
+    }
+
+    public void setDisplay_iteration_gap(int display_iteration_gap) {
+        this.display_iteration_gap = display_iteration_gap;
+    }
+
+    public boolean isCompared() {
+        return isCompared;
+    }
+
+    public void setCompared(boolean compared) {
+        isCompared = compared;
     }
 
     public String getWeightFileName() {
@@ -85,14 +105,6 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
 
     public void setWeightFileName(String weightFileName) {
         this.weightFileName = weightFileName;
-    }
-
-    public boolean getWeightSaved() {
-        return weightSaved;
-    }
-
-    public void setWeightSaved(boolean weightSaved) {
-        this.weightSaved = weightSaved;
     }
 
     public boolean[] getIsTarget() {
@@ -119,7 +131,6 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         this.fieldName = fieldName;
     }
 
-
     public double getLearningRate() {
         return learningRate;
     }
@@ -127,31 +138,6 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
     public void setLearningRate(double learningRate) {
         this.learningRate = learningRate;
     }
-
-    public double getRegulationValue() {
-        return regulationValue;
-    }
-
-    public void setRegulationValue(double regulationValue) {
-        this.regulationValue = regulationValue;
-    }
-
-    public double getTrainDataPercentage() {
-        return trainDataPercentage;
-    }
-
-    public void setTrainDataPercentage(double trainDataPercentage) {
-        this.trainDataPercentage = trainDataPercentage;
-    }
-
-    public int getFoldNum() {
-        return foldNum;
-    }
-
-    public void setFoldNum(int foldNum) {
-        this.foldNum = foldNum;
-    }
-
 
     @Override
     public void loadXML(Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
@@ -180,6 +166,9 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         try {
             learningRate = Double.parseDouble(XMLHandler.getTagValue( stepnode, "learning_rate" ));
             iterationNum = Integer.parseInt(XMLHandler.getTagValue( stepnode, "iteration_num" ));
+            weightFileName = XMLHandler.getTagValue(stepnode, "weight_file_name");
+            display_iteration_gap = Integer.parseInt(XMLHandler.getTagValue(stepnode, "display_iteration_gap"));
+            isCompared = "Y".equalsIgnoreCase(XMLHandler.getTagValue(stepnode, "is_compared"));
 
             Node fields = XMLHandler.getSubNode( stepnode, "fields" );
             int nrfields = XMLHandler.countNodes( fields, "field" );
@@ -204,7 +193,9 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         trainDataPercentage = 0.8;
         foldNum = 5;
         iterationNum = 500;
-        weightSaved = false;
+        weightFileName = "";
+        display_iteration_gap = 50;
+        isCompared = true;
         int nrfields = 0;
         allocate( nrfields );
     }
@@ -215,6 +206,9 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
 
         retval.append( "      " ).append( XMLHandler.addTagValue( "learning_rate", learningRate ) );
         retval.append( "      " ).append( XMLHandler.addTagValue( "iteration_num", iterationNum ) );
+        retval.append( "      " ).append( XMLHandler.addTagValue( "weight_file_name", weightFileName ) );
+        retval.append( "      " ).append( XMLHandler.addTagValue( "is_compared", isCompared ) );
+        retval.append( "      " ).append( XMLHandler.addTagValue( "display_iteration_gap", display_iteration_gap ) );
 
         retval.append( "    <fields>" ).append( Const.CR );
         for ( int i = 0; i < fieldName.length; i++ ) {
@@ -233,6 +227,9 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         try {
             learningRate = Double.parseDouble(rep.getStepAttributeString( id_step, "learning_rate" ));
             iterationNum = Integer.parseInt(rep.getStepAttributeString( id_step, "iteration_num" ));
+            weightFileName = rep.getStepAttributeString(id_step, "weight_file_name");
+            display_iteration_gap = Integer.parseInt(rep.getStepAttributeString(id_step, "display_iteration_gap"));
+            isCompared = "Y".equalsIgnoreCase(rep.getStepAttributeString(id_step, "is_compared"));
 
             int nrfields = rep.countNrStepAttributes( id_step, "field_name" );
 
@@ -252,6 +249,9 @@ public class LinearRegressorMeta  extends BaseStepMeta implements StepMetaInterf
         try {
             rep.saveStepAttribute( id_transformation, id_step, "learning_rate", learningRate );
             rep.saveStepAttribute( id_transformation, id_step, "iteration_num", iterationNum );
+            rep.saveStepAttribute( id_transformation, id_step, "weight_file_name", weightFileName);
+            rep.saveStepAttribute( id_transformation, id_step, "display_iteration_gap", display_iteration_gap);
+            rep.saveStepAttribute( id_transformation, id_step, "is_compared", isCompared);
 
             for ( int i = 0; i < fieldName.length; i++ ) {
                 rep.saveStepAttribute( id_transformation, id_step, i, "field_name", fieldName[i] );
