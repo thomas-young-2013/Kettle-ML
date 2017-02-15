@@ -18,6 +18,8 @@ import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -110,12 +112,40 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         double [][]thetaVal = theta.getArray();
         for (int i=0; i<data.fieldnrs; i++) data.weights[i] = thetaVal[i][0];
 
-        // save the weight value to file
         if (meta.getWeightFileName() != null && meta.getWeightFileName() != "") {
-
+            data.weightString = getWeightString();
+            saveWeightFile();
         }
+
     }
 
+    public String getWeightString() {
+        StringBuilder val = new StringBuilder(256);
+        val.append("constant_field");
+        RowMetaInterface inputRowMeta = getInputRowMeta();
+        for ( int i = 0; i < inputRowMeta.getFieldNames().length; i++) {
+            if( i != data.targetIndex )
+                val.append("," + inputRowMeta.getFieldNames()[i]);
+        }
+        val.append("\n");
+        val.append(data.weights[0]);
+        for (int i=1; i<data.fieldnrs; i++) {
+            val.append(",");
+            val.append(data.weights[i]);
+        }
+        return val.toString();
+    }
+
+    public void saveWeightFile() {
+        // save the weight value to file
+        try {
+            data.bufferedWriter = new BufferedWriter(new FileWriter(meta.getWeightFileName()));
+            data.bufferedWriter.write(data.weightString);
+            data.bufferedWriter.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     @Override
     public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
         // wait for first for is available

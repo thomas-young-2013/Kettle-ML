@@ -410,7 +410,7 @@ public class LinearRegressorDialog extends BaseStepDialog implements StepDialogI
     public void getData() {
         wPrefix.setText(String.valueOf(input.getLearningRate()));
         wSortSize.setText(String.valueOf(input.getIterationNum()));
-        wFilename.setText(input.getWeightFileName()==null?"":"");
+        wFilename.setText(input.getWeightFileName()==null?"":input.getWeightFileName());
         wIterationGap.setText(String.valueOf(input.getDisplay_iteration_gap()));
         wFileIsCommand.setSelection(input.isCompared());
 

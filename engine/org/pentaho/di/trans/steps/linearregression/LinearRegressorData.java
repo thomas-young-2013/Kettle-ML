@@ -8,6 +8,7 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
+import java.io.BufferedWriter;
 import java.util.List;
 
 public class LinearRegressorData extends BaseStepData implements StepDataInterface {
@@ -27,6 +28,9 @@ public class LinearRegressorData extends BaseStepData implements StepDataInterfa
     // store the weights(delta)
     public Object[] weights;
 
+    BufferedWriter bufferedWriter;
+
+    public String weightString;
     public LinearRegressorData() {
         super();
     }
