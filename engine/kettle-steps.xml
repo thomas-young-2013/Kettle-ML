@@ -176,4 +176,14 @@
   <cases_url/>
   <forum_url/>
  </step>
+ <step id="LinearRegressionPredictor">
+  <description>i18n:org.pentaho.di.trans.step:BaseStep.TypeLongDesc.LinearRegressionPredictor</description>
+  <classname>org.pentaho.di.trans.steps.linearregression.LinearRegressorMeta</classname>
+  <category>i18n:org.pentaho.di.trans.step:BaseStep.Category.Transform</category>
+  <tooltip>i18n:org.pentaho.di.trans.step:BaseStep.TypeTooltipDesc.LinearRegressionPredictor</tooltip>
+  <iconfile>ui/images/lr-pre.jpg</iconfile>
+  <documentation_url>http://wiki.pentaho.com/display/EAI/Sort+rows</documentation_url>
+  <cases_url/>
+  <forum_url/>
+ </step>
 </steps>
