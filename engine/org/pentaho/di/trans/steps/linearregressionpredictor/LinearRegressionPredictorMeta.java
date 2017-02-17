@@ -49,6 +49,18 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
     @Injection( name = "FIELD_NUM", group = "FIELDS" )
     private int fieldNum;
 
+    /** step name that trains the model*/
+    @Injection( name = "TRAIN_STEP", group = "FIELDS" )
+    private String trainStep;
+
+    public String getTrainStep() {
+        return trainStep;
+    }
+
+    public void setTrainStep(String trainStep) {
+        this.trainStep = trainStep;
+    }
+
     public String[] getFieldName() {
         return fieldName;
     }
@@ -106,6 +118,7 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
             isAppended = "YES".equalsIgnoreCase(XMLHandler.getTagValue( stepnode, "is_appended" ));
             processLogFileName = XMLHandler.getTagValue(stepnode, "process_log_file_name");
             fieldNum = Integer.parseInt(XMLHandler.getTagValue(stepnode, "field_num"));
+            trainStep = XMLHandler.getTagValue(stepnode, "train_step");
 
             Node fields = XMLHandler.getSubNode( stepnode, "fields" );
             int nrfields = XMLHandler.countNodes( fields, "field" );
@@ -130,11 +143,10 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
     public String getXML() {
         StringBuilder retval = new StringBuilder();
 
-        List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-
         retval.append( XMLHandler.addTagValue( "is_appended", isAppended ) );
         retval.append( XMLHandler.addTagValue( "process_log_file_name", processLogFileName ) );
         retval.append( XMLHandler.addTagValue( "field_num", fieldNum ) );
+        retval.append( XMLHandler.addTagValue("train_step", trainStep));
 
         retval.append( "    <fields>" ).append( Const.CR );
         for ( int i = 0; i < fieldName.length; i++ ) {
@@ -152,6 +164,7 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
             isAppended = "YES".equalsIgnoreCase(rep.getStepAttributeString( id_step, "is_appended" ));
             processLogFileName = rep.getStepAttributeString(id_step, "process_log_file_name");
             fieldNum = Integer.parseInt(rep.getStepAttributeString(id_step, "field_num"));
+            trainStep = rep.getStepAttributeString(id_step, "train_step");
 
             int nrfields = rep.countNrStepAttributes( id_step, "field_name" );
 
@@ -172,6 +185,7 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
             rep.saveStepAttribute( id_transformation, id_step, "field_num", fieldNum );
             rep.saveStepAttribute( id_transformation, id_step, "process_log_file_name", processLogFileName );
             rep.saveStepAttribute( id_transformation, id_step, "is_appended", isAppended );
+            rep.saveStepAttribute( id_transformation, id_step, "train_step", trainStep);
 
             for ( int i = 0; i < fieldName.length; i++ ) {
                 rep.saveStepAttribute( id_transformation, id_step, i, "field_name", fieldName[i] );

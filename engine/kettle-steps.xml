@@ -178,7 +178,7 @@
  </step>
  <step id="LinearRegressionPredictor">
   <description>i18n:org.pentaho.di.trans.step:BaseStep.TypeLongDesc.LinearRegressionPredictor</description>
-  <classname>org.pentaho.di.trans.steps.linearregression.LinearRegressorMeta</classname>
+  <classname>org.pentaho.di.trans.steps.linearregressionpredictor.LinearRegressionPredictorMeta</classname>
   <category>i18n:org.pentaho.di.trans.step:BaseStep.Category.Transform</category>
   <tooltip>i18n:org.pentaho.di.trans.step:BaseStep.TypeTooltipDesc.LinearRegressionPredictor</tooltip>
   <iconfile>ui/images/lr-pre.jpg</iconfile>
