@@ -20,11 +20,7 @@ import org.pentaho.di.repository.Repository;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.*;
-import org.pentaho.di.trans.step.errorhandling.Stream;
-import org.pentaho.di.trans.step.errorhandling.StreamIcon;
 import org.pentaho.di.trans.step.errorhandling.StreamInterface;
-import org.pentaho.di.trans.steps.mergejoin.MergeJoin;
-import org.pentaho.di.trans.steps.mergejoin.MergeJoinData;
 import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
 
@@ -41,24 +37,17 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
     @Injection( name = "FIELD_NAME", group = "FIELDS" )
     private String[] fieldName;
 
-    /** true if display the scoring info, false otherwise*/
-    @Injection( name = "Is_SCORE", group = "FIELDS" )
-    private boolean isScored;
+    /** true if appended to the end in the file*/
+    @Injection( name = "Is_APPENDED", group = "FIELDS" )
+    private boolean isAppended;
+
+    /** the file's name, which stored the score info*/
+    @Injection( name = "PROCESS_LOG_FILE_NAME", group = "FIELDS" )
+    private String processLogFileName;
 
     /** the number of fields*/
     @Injection( name = "FIELD_NUM", group = "FIELDS" )
     private int fieldNum;
-
-    public static final String[] join_types = { "INNER", "LEFT OUTER", "RIGHT OUTER", "FULL OUTER" };
-    public static final boolean[] one_optionals = { false, false, true, true };
-    public static final boolean[] two_optionals = { false, true, false, true };
-    @Injection( name = "JOIN_TYPE" )
-    private String joinType;
-    @Injection( name = "KEY_FIELD1" )
-    private String[] keyFields1;
-    @Injection( name = "KEY_FIELD2" )
-    private String[] keyFields2;
-
 
     public String[] getFieldName() {
         return fieldName;
@@ -68,62 +57,28 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
         this.fieldName = fieldName;
     }
 
-    public boolean isScored() {
-        return isScored;
+    public boolean isAppended() {
+        return isAppended;
     }
 
-    public void setScored(boolean scored) {
-        isScored = scored;
+    public void setAppended(boolean appended) {
+        isAppended = appended;
     }
 
-    /**
-     * The supported join types are INNER, LEFT OUTER, RIGHT OUTER and FULL OUTER
-     *
-     * @return The type of join
-     */
-    public String getJoinType() {
-        return joinType;
+    public String getProcessLogFileName() {
+        return processLogFileName;
     }
 
-    /**
-     * Sets the type of join
-     *
-     * @param joinType The type of join, e.g. INNER/FULL OUTER
-     */
-    public void setJoinType( String joinType ) {
-        this.joinType = joinType;
+    public void setProcessLogFileName(String processLogFileName) {
+        this.processLogFileName = processLogFileName;
     }
 
-    /**
-     * @return Returns the keyFields1.
-     */
-    public String[] getKeyFields1() {
-        return keyFields1;
+    public int getFieldNum() {
+        return fieldNum;
     }
 
-    /**
-     * @param keyFields1 The keyFields1 to set.
-     */
-    public void setKeyFields1( String[] keyFields1 ) {
-        this.keyFields1 = keyFields1;
-    }
-
-    /**
-     * @return Returns the keyFields2.
-     */
-    public String[] getKeyFields2() {
-        return keyFields2;
-    }
-
-    /**
-     * @param keyFields2 The keyFields2 to set.
-     */
-    public void setKeyFields2( String[] keyFields2 ) {
-        this.keyFields2 = keyFields2;
-    }
-
-    public boolean excludeFromRowLayoutVerification() {
-        return true;
+    public void setFieldNum(int fieldNum) {
+        this.fieldNum = fieldNum;
     }
 
     public LinearRegressionPredictorMeta() {
@@ -142,67 +97,24 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
         LinearRegressionPredictorMeta retval = (LinearRegressionPredictorMeta) super.clone();
         retval.allocate( fieldNum );
         System.arraycopy(fieldName, 0, retval.fieldName, 0, fieldNum);
-
-        StepIOMetaInterface stepIOMeta = new StepIOMeta( true, true, false, false, false, false );
-        List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-
-        for ( StreamInterface infoStream : infoStreams ) {
-            stepIOMeta.addStream( new Stream( infoStream ) );
-        }
-        retval.ioMeta = stepIOMeta;
-
         return retval;
-    }
-
-    public String getXML() {
-        StringBuilder retval = new StringBuilder();
-
-        List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-
-        retval.append( XMLHandler.addTagValue( "join_type", getJoinType() ) );
-        retval.append( XMLHandler.addTagValue( "step1", infoStreams.get( 0 ).getStepname() ) );
-        retval.append( XMLHandler.addTagValue( "step2", infoStreams.get( 1 ).getStepname() ) );
-
-        retval.append( "    <keys_1>" + Const.CR );
-        for ( int i = 0; i < fieldName.length; i++ ) {
-            retval.append( "      " + XMLHandler.addTagValue( "key", keyFields1[i] ) );
-        }
-        retval.append( "    </keys_1>" + Const.CR );
-
-        retval.append( "    <keys_2>" + Const.CR );
-        for ( int i = 0; i < keyFields2.length; i++ ) {
-            retval.append( "      " + XMLHandler.addTagValue( "key", keyFields2[i] ) );
-        }
-        retval.append( "    </keys_2>" + Const.CR );
-
-        return retval.toString();
     }
 
     private void readData( Node stepnode ) throws KettleXMLException {
         try {
 
-            Node keysNode1 = XMLHandler.getSubNode( stepnode, "keys_1" );
-            Node keysNode2 = XMLHandler.getSubNode( stepnode, "keys_2" );
+            isAppended = "YES".equalsIgnoreCase(XMLHandler.getTagValue( stepnode, "is_appended" ));
+            processLogFileName = XMLHandler.getTagValue(stepnode, "process_log_file_name");
+            fieldNum = Integer.parseInt(XMLHandler.getTagValue(stepnode, "field_num"));
 
-            int nrKeys1 = XMLHandler.countNodes( keysNode1, "key" );
-            int nrKeys2 = XMLHandler.countNodes( keysNode2, "key" );
+            Node fields = XMLHandler.getSubNode( stepnode, "fields" );
+            int nrfields = XMLHandler.countNodes( fields, "field" );
+            allocate( nrfields );
 
-            // allocate( nrKeys1, nrKeys2 );
-
-            for ( int i = 0; i < nrKeys1; i++ ) {
-                Node keynode = XMLHandler.getSubNodeByNr( keysNode1, "key", i );
-                keyFields1[i] = XMLHandler.getNodeValue( keynode );
+            for ( int i = 0; i < nrfields; i++ ) {
+                Node fnode = XMLHandler.getSubNodeByNr( fields, "field", i );
+                fieldName[i] = XMLHandler.getTagValue( fnode, "field_name" );
             }
-
-            for ( int i = 0; i < nrKeys2; i++ ) {
-                Node keynode = XMLHandler.getSubNodeByNr( keysNode2, "key", i );
-                keyFields2[i] = XMLHandler.getNodeValue( keynode );
-            }
-
-            List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-            infoStreams.get( 0 ).setSubject( XMLHandler.getTagValue( stepnode, "step1" ) );
-            infoStreams.get( 1 ).setSubject( XMLHandler.getTagValue( stepnode, "step2" ) );
-            joinType = XMLHandler.getTagValue( stepnode, "join_type" );
         } catch ( Exception e ) {
             throw new KettleXMLException(
                     BaseMessages.getString( PKG, "MergeJoinMeta.Exception.UnableToLoadStepInfo" ), e );
@@ -211,71 +123,64 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
 
     public void setDefault() {
         allocate( 0);
+        processLogFileName = "";
+        isAppended = true;
+    }
+
+    public String getXML() {
+        StringBuilder retval = new StringBuilder();
+
+        List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
+
+        retval.append( XMLHandler.addTagValue( "is_appended", isAppended ) );
+        retval.append( XMLHandler.addTagValue( "process_log_file_name", processLogFileName ) );
+        retval.append( XMLHandler.addTagValue( "field_num", fieldNum ) );
+
+        retval.append( "    <fields>" ).append( Const.CR );
+        for ( int i = 0; i < fieldName.length; i++ ) {
+            retval.append( "      <field>" ).append( Const.CR );
+            retval.append( "        " ).append( XMLHandler.addTagValue( "field_name", fieldName[i] ) );
+            retval.append( "      </field>" ).append( Const.CR );
+        }
+        retval.append( "    </fields>" ).append( Const.CR );
+
+        return retval.toString();
     }
 
     public void readRep(Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
         try {
-            int nrKeys1 = rep.countNrStepAttributes( id_step, "keys_1" );
-            int nrKeys2 = rep.countNrStepAttributes( id_step, "keys_2" );
+            isAppended = "YES".equalsIgnoreCase(rep.getStepAttributeString( id_step, "is_appended" ));
+            processLogFileName = rep.getStepAttributeString(id_step, "process_log_file_name");
+            fieldNum = Integer.parseInt(rep.getStepAttributeString(id_step, "field_num"));
 
-            // allocate( nrKeys1, nrKeys2 );
+            int nrfields = rep.countNrStepAttributes( id_step, "field_name" );
 
-            for ( int i = 0; i < nrKeys1; i++ ) {
-                keyFields1[i] = rep.getStepAttributeString( id_step, i, "keys_1" );
+            allocate( nrfields );
+
+            for ( int i = 0; i < nrfields; i++ ) {
+                fieldName[i] = rep.getStepAttributeString( id_step, i, "field_name" );
             }
-            for ( int i = 0; i < nrKeys2; i++ ) {
-                keyFields2[i] = rep.getStepAttributeString( id_step, i, "keys_2" );
-            }
 
-            List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-            infoStreams.get( 0 ).setSubject( rep.getStepAttributeString( id_step, "step1" ) );
-            infoStreams.get( 1 ).setSubject( rep.getStepAttributeString( id_step, "step2" ) );
-            joinType = rep.getStepAttributeString( id_step, "join_type" );
         } catch ( Exception e ) {
             throw new KettleException( BaseMessages.getString(
                     PKG, "MergeJoinMeta.Exception.UnexpectedErrorReadingStepInfo" ), e );
         }
     }
 
-    @Override
-    public void searchInfoAndTargetSteps( List<StepMeta> steps ) {
-        for ( StreamInterface stream : getStepIOMeta().getInfoStreams() ) {
-            stream.setStepMeta( StepMeta.findStep( steps, (String) stream.getSubject() ) );
-        }
-    }
-
     public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
         try {
-            for ( int i = 0; i < keyFields1.length; i++ ) {
-                rep.saveStepAttribute( id_transformation, id_step, i, "keys_1", keyFields1[i] );
+            rep.saveStepAttribute( id_transformation, id_step, "field_num", fieldNum );
+            rep.saveStepAttribute( id_transformation, id_step, "process_log_file_name", processLogFileName );
+            rep.saveStepAttribute( id_transformation, id_step, "is_appended", isAppended );
+
+            for ( int i = 0; i < fieldName.length; i++ ) {
+                rep.saveStepAttribute( id_transformation, id_step, i, "field_name", fieldName[i] );
             }
 
-            for ( int i = 0; i < keyFields2.length; i++ ) {
-                rep.saveStepAttribute( id_transformation, id_step, i, "keys_2", keyFields2[i] );
-            }
-
-            List<StreamInterface> infoStreams = getStepIOMeta().getInfoStreams();
-
-            rep.saveStepAttribute( id_transformation, id_step, "step1", infoStreams.get( 0 ).getStepname() );
-            rep.saveStepAttribute( id_transformation, id_step, "step2", infoStreams.get( 1 ).getStepname() );
-            rep.saveStepAttribute( id_transformation, id_step, "join_type", getJoinType() );
         } catch ( Exception e ) {
             throw new KettleException( BaseMessages.getString( PKG, "MergeJoinMeta.Exception.UnableToSaveStepInfo" )
                     + id_step, e );
         }
-    }
-
-    public void check(List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
-                      RowMetaInterface prev, String[] input, String[] output, RowMetaInterface info, VariableSpace space,
-                      Repository repository, IMetaStore metaStore ) {
-    /*
-     * @todo Need to check for the following: 1) Join type must be one of INNER / LEFT OUTER / RIGHT OUTER / FULL OUTER
-     * 2) Number of input streams must be two (for now at least) 3) The field names of input streams must be unique
-     */
-        CheckResult cr =
-                new CheckResult( CheckResultInterface.TYPE_RESULT_WARNING, BaseMessages.getString(
-                        PKG, "MergeJoinMeta.CheckResult.StepNotVerified" ), stepMeta );
-        remarks.add( cr );
     }
 
     public void getFields( RowMetaInterface r, String name, RowMetaInterface[] info, StepMeta nextStep,
@@ -300,30 +205,29 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
         return;
     }
 
+    @Override
+    public void searchInfoAndTargetSteps( List<StepMeta> steps ) {
+        for ( StreamInterface stream : getStepIOMeta().getInfoStreams() ) {
+            stream.setStepMeta( StepMeta.findStep( steps, (String) stream.getSubject() ) );
+        }
+    }
+
+    public void check(List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
+                      RowMetaInterface prev, String[] input, String[] output, RowMetaInterface info, VariableSpace space,
+                      Repository repository, IMetaStore metaStore ) {
+        CheckResult cr =
+                new CheckResult( CheckResultInterface.TYPE_RESULT_WARNING, BaseMessages.getString(
+                        PKG, "MergeJoinMeta.CheckResult.StepNotVerified" ), stepMeta );
+        remarks.add( cr );
+    }
+
     public StepInterface getStep( StepMeta stepMeta, StepDataInterface stepDataInterface, int cnr, TransMeta tr,
                                   Trans trans ) {
-        return new MergeJoin( stepMeta, stepDataInterface, cnr, tr, trans );
+        return new LinearRegressionPredictor( stepMeta, stepDataInterface, cnr, tr, trans );
     }
 
     public StepDataInterface getStepData() {
-        return new MergeJoinData();
-    }
-
-    /**
-     * Returns the Input/Output metadata for this step. The generator step only produces output, does not accept input!
-     */
-    public StepIOMetaInterface getStepIOMeta() {
-        if ( ioMeta == null ) {
-
-            ioMeta = new StepIOMeta( true, true, false, false, false, false );
-
-            ioMeta.addStream( new Stream( StreamInterface.StreamType.INFO, null, BaseMessages.getString(
-                    PKG, "MergeJoinMeta.InfoStream.FirstStream.Description" ), StreamIcon.INFO, null ) );
-            ioMeta.addStream( new Stream( StreamInterface.StreamType.INFO, null, BaseMessages.getString(
-                    PKG, "MergeJoinMeta.InfoStream.SecondStream.Description" ), StreamIcon.INFO, null ) );
-        }
-
-        return ioMeta;
+        return new LinearRegressionPredictorData();
     }
 
     public void resetStepIoMeta() {
