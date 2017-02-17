@@ -3,12 +3,10 @@ package org.pentaho.di.trans.steps.linearregressionpredictor;
 import org.pentaho.di.core.RowSet;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMeta;
-import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.*;
-import org.pentaho.di.trans.step.errorhandling.StreamInterface;
 
 import java.util.ArrayList;
 import java.util.List;
