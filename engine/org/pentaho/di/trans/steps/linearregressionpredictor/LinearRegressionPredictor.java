@@ -1,6 +1,7 @@
 package org.pentaho.di.trans.steps.linearregressionpredictor;
 
 import Jama.Matrix;
+import org.pentaho.di.computation.MetrixUtils;
 import org.pentaho.di.core.RowSet;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMeta;
@@ -8,11 +9,22 @@ import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.*;
+import org.pentaho.di.trans.steps.linearregression.LinearRegressor;
+import org.pentaho.di.trans.steps.linearregression.LinearRegressorMeta;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-
+/*
+* to do list:
+* 1. MSE library
+* 2. Output to file(appended or not)
+*
+* */
 /**
  * Created by thomasyngli on 2017/2/16.
  */
@@ -27,7 +39,48 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
         super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
     }
 
+    public void passResult(int count) {
+        String []fields = meta.getFieldName();
+        int []lookup = new int[fields.length];
+        int targetIndex = -1;
+        boolean checkFlag = true;
+        for (int i = 0; i < fields.length; i++ ) {
+            int index = data.weightMeta.indexOfValue(fields[i]);
+            if (index >= 0 && index < data.weightMeta.size()-1) {
+                lookup[i] = index;
+            } else {
+                if (!fields[i].equals(data.targetField)) {
+                    checkFlag = false;
+                    break;
+                } else {
+                    targetIndex = i;
+                }
+            }
+        }
+        if (!checkFlag) return;
+        double [][]aArray = data.A.getArray();
+        for ( int i = 0; i < data.A.getRowDimension(); i++ ) {
+            Object [] row = new Object[fields.length];
+            for (int j=0; j<fields.length; j++) {
+                if (j == targetIndex) row[j] = data.p.get(i, 0);
+                else row[j] = aArray[i][lookup[j]];
+            }
+            try {
+                putRow(data.outputRowMeta, row);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void predcit() {
+        // prepare the matrix.
+        double [][] wt = new double[data.fieldNum][1];
+        for (int j = 0; j<data.fieldNum; j++) {
+            wt[j][0] = (Double) data.weights[j];
+        }
+        data.w = new Matrix(wt);
+
         String [] fields = data.weightMeta.getFieldNames();
         // first we need to adjust the order of field, same with the weight.
         for (int i = 0; i < data.featureRowSets.size(); i++) {
@@ -37,11 +90,11 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
             String []fieldTmp = data.featureMetas.get(i).getFieldNames();
 
             // decide whether target field is in the fields.
-            boolean isTargetFieldIn = false;
+            data.isTargetFieldIn = false;
             int targetIndex = -1;
             for (int j=0; j<fieldTmp.length; j++) {
                 if (fieldTmp[j].equals(data.targetField)) {
-                    isTargetFieldIn = true;
+                    data.isTargetFieldIn = true;
                     targetIndex = j;
                     break;
                 }
@@ -69,35 +122,75 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
                 for (int j = 1; j < data.fieldNum; j++) {
                     mat[rowCount][count++] = (Double) row[lookup[j]];
                 }
-                if (isTargetFieldIn) {
+                if (data.isTargetFieldIn) {
                     t[rowCount] = (Double) row[targetIndex];
                 }
                 rowCount++;
             }
 
-            // prepare the matrix.
-            Matrix A = new Matrix(mat);
-            double [][] wt = new double[data.fieldNum][1];
-            for (int j = 0; j<data.fieldNum; j++) {
-                wt[j][0] = (Double) data.weights[j];
-            }
-            Matrix w = new Matrix(wt);
+            data.A = new Matrix(mat);
+            data.p = data.A.times(data.w);
+            passResult(i);
+            // compute the mse.
+            if (data.isTargetFieldIn) {
+                double[][] yT = new double[data.features.get(i).size()][1];
+                for (int j = 0; j < data.features.get(i).size(); j++) {
+                    yT[j][0] = t[j];
+                }
+                data.y = new Matrix(yT);
+                data.mse = MetrixUtils.computeMES(data.p, data.y);
+                logBasic( String.format("the MSE is: %#.5f", data.mse ));
 
-            Matrix p = A.times(w);
-            p.print(1, 5);
-
-            double [][] yT = new double[data.features.get(i).size()][1];
-            for (int j = 0; j < data.features.get(i).size(); j++ ) {
-                yT[j][0] = t[j];
+                if (meta.getProcessLogFileName() != null && meta.getProcessLogFileName() != "") {
+                    data.outputString = getOutputString();
+                    saveFile();
+                }
             }
-            Matrix y = new Matrix(yT);
-            y.print(1, 5);
+
+        }
+    }
+
+    public String getCurrentTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String val = "";
+        try {
+            val = sdf.parse(sdf.format(new Date())).toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return val;
+    }
+
+    /*
+    * print time, iteration num, mse, train step name, weight
+    * */
+    public String getOutputString() {
+        StringBuilder val = new StringBuilder(256);
+        val.append("\n<-----------Kettle Working with Machine Learning----------->\n");
+        val.append("Current times is: " + getCurrentTime() + "\n");
+        ArrayList<?> steps = (ArrayList<?>) getTrans().findBaseSteps(meta.getTrainStep());
+        LinearRegressor linearRegressor = (LinearRegressor) steps.get(0);
+        LinearRegressorMeta linearRegressorMeta = (LinearRegressorMeta) linearRegressor.getLinearRegressorMeta();
+        val.append(String.format("Learning rate is: %f\n", linearRegressorMeta.getLearningRate()));
+        val.append(String.format("Iteration number is: %d\n", linearRegressorMeta.getIterationNum()));
+        val.append(String.format("MSE is: %#.5f\n", data.mse));
+        val.append(linearRegressor.getWeightString() + "\n\n");
+        return val.toString();
+    }
+
+    public void saveFile() {
+        // save the weight value to file
+        try {
+            data.bufferedWriter = new BufferedWriter(new FileWriter(meta.getProcessLogFileName(), true));
+            data.bufferedWriter.write(data.outputString);
+            data.bufferedWriter.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     public boolean processRow(StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
-        meta.setTrainStep("线性回归");
 
         if (first) {
             this.first = false;
@@ -135,17 +228,11 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
 
             // set the output meta
             RowMeta rowMeta = new RowMeta();
-            rowMeta.addValueMeta(new ValueMetaNumber("constant_field", 10, 6));
-
             for (String fieldName: meta.getFieldName()) {
-                if (!fieldName.equals(data.targetField)) {
-                    rowMeta.addValueMeta(new ValueMetaNumber(fieldName, 10, 6));
-                }
+                rowMeta.addValueMeta(new ValueMetaNumber(fieldName, 10, 6));
             }
-            rowMeta.addValueMeta(new ValueMetaNumber(data.targetField, 10, 6));
             data.outputRowMeta = rowMeta;
             meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );
-
         }
 
         // read data from trainer step: weights.

@@ -272,4 +272,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
     public void batchComplete() throws KettleException {
         setOutputDone();
     }
+    public LinearRegressorMeta getLinearRegressorMeta() {
+        return meta;
+    }
 }

@@ -1,10 +1,12 @@
 package org.pentaho.di.trans.steps.linearregressionpredictor;
 
+import Jama.Matrix;
 import org.pentaho.di.core.RowSet;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
+import java.io.BufferedWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,8 +24,13 @@ public class LinearRegressionPredictorData extends BaseStepData implements StepD
     public List<RowSet> featureRowSets;
     public RowSet weightRowSet;
 
-    int fieldNum;
+    public int fieldNum;
     public String targetField;
+    public String outputString;
+    public Matrix A, y, w, p;
+    BufferedWriter bufferedWriter;
+    public double mse;
+    public boolean isTargetFieldIn;
 
     /**
      * Default initializer
