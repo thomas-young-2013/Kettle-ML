@@ -22,6 +22,7 @@ public class LinearRegressionPredictorData extends BaseStepData implements StepD
     public List<RowSet> featureRowSets;
     public RowSet weightRowSet;
 
+    int fieldNum;
     public String targetField;
 
     /**

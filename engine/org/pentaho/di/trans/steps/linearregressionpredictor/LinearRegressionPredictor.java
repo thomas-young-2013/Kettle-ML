@@ -1,5 +1,6 @@
 package org.pentaho.di.trans.steps.linearregressionpredictor;
 
+import Jama.Matrix;
 import org.pentaho.di.core.RowSet;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMeta;
@@ -27,7 +28,71 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
     }
 
     public void predcit() {
+        String [] fields = data.weightMeta.getFieldNames();
+        // first we need to adjust the order of field, same with the weight.
+        for (int i = 0; i < data.featureRowSets.size(); i++) {
+            double [][] mat = new double[data.features.get(i).size()][data.fieldNum];
+            double [] t = new double[data.features.get(i).size()];
 
+            String []fieldTmp = data.featureMetas.get(i).getFieldNames();
+
+            // decide whether target field is in the fields.
+            boolean isTargetFieldIn = false;
+            int targetIndex = -1;
+            for (int j=0; j<fieldTmp.length; j++) {
+                if (fieldTmp[j].equals(data.targetField)) {
+                    isTargetFieldIn = true;
+                    targetIndex = j;
+                    break;
+                }
+            }
+
+            int []lookup = new int[data.fieldNum];
+            boolean fieldCheck = true;
+            for (int j = 1; j < data.fieldNum; j++) {
+                boolean flag = false;
+                for (int k = 0; k < fieldTmp.length; k++) {
+                    if (fields[j].equals(fieldTmp[k])) {
+                        lookup[j] = k;
+                        flag = true;
+                    }
+                }
+                fieldCheck &= flag;
+            }
+
+            if (!fieldCheck) continue;
+            // prepare the data.
+            int rowCount = 0;
+            for (Object []row: data.features.get(i)) {
+                int count = 1;
+                mat[rowCount][0] = 1.0;
+                for (int j = 1; j < data.fieldNum; j++) {
+                    mat[rowCount][count++] = (Double) row[lookup[j]];
+                }
+                if (isTargetFieldIn) {
+                    t[rowCount] = (Double) row[targetIndex];
+                }
+                rowCount++;
+            }
+
+            // prepare the matrix.
+            Matrix A = new Matrix(mat);
+            double [][] wt = new double[data.fieldNum][1];
+            for (int j = 0; j<data.fieldNum; j++) {
+                wt[j][0] = (Double) data.weights[j];
+            }
+            Matrix w = new Matrix(wt);
+
+            Matrix p = A.times(w);
+            p.print(1, 5);
+
+            double [][] yT = new double[data.features.get(i).size()][1];
+            for (int j = 0; j < data.features.get(i).size(); j++ ) {
+                yT[j][0] = t[j];
+            }
+            Matrix y = new Matrix(yT);
+            y.print(1, 5);
+        }
     }
 
     @Override
@@ -43,10 +108,11 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
 
             while (true) {
                 List<RowSet> rowsets = getInputRowSets();
+                boolean flag = false;
                 for (RowSet rowSet: rowsets) {
-                    if (rowSet.getRowMeta() == null || rowSet.getRowMeta().getFieldNames().length == 0) continue;
+                    if (rowSet.getRowMeta() == null || rowSet.getRowMeta().getFieldNames().length == 0) flag = true;
                 }
-                break;
+                if (!flag) break;
             }
             List<RowSet> rowsets = getInputRowSets();
             for (RowSet rowSet: rowsets) {
@@ -55,6 +121,7 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
                     data.weightMeta = rowSet.getRowMeta();
                     // set the target field.
                     data.targetField = data.weightMeta.getFieldNames()[data.weightMeta.getFieldNames().length-1];
+                    data.fieldNum = data.weightMeta.getFieldNames().length - 1;
                 } else {
                     data.featureMetas.add( rowSet.getRowMeta() );
                     data.featureRowSets.add(rowSet);
@@ -132,7 +199,7 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
     }
 
     private void clearBuffers() {
-        // Clean out the buffer\
+        // Clean out the buffer
         data.features.clear();
     }
 

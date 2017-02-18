@@ -10,6 +10,7 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
+import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStep;
@@ -24,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
-* things:
-*   1. the features' type: all double?
+* to do list:
+*   1. do type checking
 *
 * */
 
@@ -80,7 +81,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
         double alpha = meta.getLearningRate();
         int num_iters = meta.getIterationNum();
         // get display gap.
-        boolean isDisplay = meta.getDisplay_iteration_gap()>0;
+        boolean isDisplay = meta.getDisplay_iteration_gap() > 0;
 
         // gradient descent.
         for (int iter = 1; iter <= num_iters; iter++) {
@@ -127,12 +128,15 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             if( i != data.targetIndex )
                 val.append("," + inputRowMeta.getFieldNames()[i]);
         }
-        val.append("\n");
+        val.append(",target_field\n");
+
         val.append(data.weights[0]);
         for (int i=1; i<data.fieldnrs; i++) {
             val.append(",");
             val.append(data.weights[i]);
         }
+        val.append("," + inputRowMeta.getFieldNames()[data.targetIndex]);
+
         return val.toString();
     }
 
@@ -171,6 +175,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             for (int i=0; i<featureFieldNumber; i++) {
                 if (meta.getIsTarget()[i]) targetFieldName = meta.getFieldName()[i];
             }
+            data.targetField = targetFieldName;
 
             // find target field index.
             for (int i = 0; i < inputRowMeta.getFieldNames().length; i++) {
@@ -178,7 +183,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             }
 
             data.fieldnrs = featureFieldNumber;
-            data.weights = new Object[featureFieldNumber];
+            data.weights = new Object[ featureFieldNumber + 1 ];
 
             // Metadata
             /*data.outputRowMeta = inputRowMeta.clone();
@@ -191,6 +196,8 @@ public class LinearRegressor extends BaseStep implements StepInterface {
                 if( i != data.targetIndex )
                     rowMeta.addValueMeta(new ValueMetaNumber(inputRowMeta.getFieldNames()[i], 10, 6));
             }
+            // target field's name
+            rowMeta.addValueMeta(new ValueMetaString(data.targetField));
 
             data.outputRowMeta = rowMeta;
             meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );
@@ -202,6 +209,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             // add linear algorithm here & save the weight if necessary.
             this.doLinearRegression();
             // pass the weight to next step
+            data.weights[data.weights.length - 1] = 0;
             putRow( data.outputRowMeta, data.weights );
 
             // flush result and set output done.

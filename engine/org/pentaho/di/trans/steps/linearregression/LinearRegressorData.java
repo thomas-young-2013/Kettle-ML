@@ -31,6 +31,8 @@ public class LinearRegressorData extends BaseStepData implements StepDataInterfa
     BufferedWriter bufferedWriter;
 
     public String weightString;
+    public String targetField;
+
     public LinearRegressorData() {
         super();
     }

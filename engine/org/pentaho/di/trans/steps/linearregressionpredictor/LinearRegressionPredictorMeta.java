@@ -115,7 +115,7 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
     private void readData( Node stepnode ) throws KettleXMLException {
         try {
 
-            isAppended = "YES".equalsIgnoreCase(XMLHandler.getTagValue( stepnode, "is_appended" ));
+            isAppended = "Y".equalsIgnoreCase(XMLHandler.getTagValue( stepnode, "is_appended" ));
             processLogFileName = XMLHandler.getTagValue(stepnode, "process_log_file_name");
             fieldNum = Integer.parseInt(XMLHandler.getTagValue(stepnode, "field_num"));
             trainStep = XMLHandler.getTagValue(stepnode, "train_step");
@@ -161,7 +161,7 @@ public class LinearRegressionPredictorMeta  extends BaseStepMeta implements Step
 
     public void readRep(Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
         try {
-            isAppended = "YES".equalsIgnoreCase(rep.getStepAttributeString( id_step, "is_appended" ));
+            isAppended = "Y".equalsIgnoreCase(rep.getStepAttributeString( id_step, "is_appended" ));
             processLogFileName = rep.getStepAttributeString(id_step, "process_log_file_name");
             fieldNum = Integer.parseInt(rep.getStepAttributeString(id_step, "field_num"));
             trainStep = rep.getStepAttributeString(id_step, "train_step");
