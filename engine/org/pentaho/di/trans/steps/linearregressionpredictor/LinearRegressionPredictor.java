@@ -26,14 +26,28 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
         super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
     }
 
+    public void predcit() {
+
+    }
+
     @Override
     public boolean processRow(StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
+        meta.setTrainStep("线性回归");
+
         if (first) {
             this.first = false;
             /*
              * init the weight meta and features meta
              * init the rowsets
              */
+
+            while (true) {
+                List<RowSet> rowsets = getInputRowSets();
+                for (RowSet rowSet: rowsets) {
+                    if (rowSet.getRowMeta() == null || rowSet.getRowMeta().getFieldNames().length == 0) continue;
+                }
+                break;
+            }
             List<RowSet> rowsets = getInputRowSets();
             for (RowSet rowSet: rowsets) {
                 if (rowSet.getOriginStepName().equalsIgnoreCase(meta.getTrainStep())) {
@@ -46,6 +60,12 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
                     data.featureRowSets.add(rowSet);
                 }
             }
+
+            // init the list, which stores the data.
+            for (int i = 0; i < data.featureRowSets.size(); i++) {
+                data.features.add(new ArrayList<Object []>());
+            }
+
             // set the output meta
             RowMeta rowMeta = new RowMeta();
             rowMeta.addValueMeta(new ValueMetaNumber("constant_field", 10, 6));
@@ -60,14 +80,18 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
             meta.getFields( data.outputRowMeta, getStepname(), null, null, this, repository, metaStore );
 
         }
+
+        // read data from trainer step: weights.
+        boolean endedFlag = false;
         if (data.weights == null) {
             data.weights = getRowFrom(data.weightRowSet);
+            if (data.weights == null) endedFlag = true;
         }
-        boolean endedFlag = false;
-        for (int i=0; i<data.featureRowSets.size(); i++) {
+
+        for ( int i = 0; i < data.featureRowSets.size(); i++ ) {
             Object [] row = getRowFrom(data.featureRowSets.get(i));
-            if (row != null) {
-                endedFlag = true;
+            if ( row != null ) {
+                endedFlag |= true;
                 data.features.get(i).add(row);
             }
         }
@@ -77,7 +101,7 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
              * predict algorithm here.
              * put the result to the next step: using putrow
              */
-
+            predcit();
             clearBuffers();
             this.setOutputDone();
             return false;
