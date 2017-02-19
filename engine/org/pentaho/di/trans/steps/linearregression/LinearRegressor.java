@@ -24,10 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
-* to do list:
-*   1. Do Type Checking
-*
-* */
+ * to do list:
+ *   1. Do Type Checking
+ *
+ * */
 
 public class LinearRegressor extends BaseStep implements StepInterface {
     private static Class<?> PKG = LinearRegressor.class; // for i18n

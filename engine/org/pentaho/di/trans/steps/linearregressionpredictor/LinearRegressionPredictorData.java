@@ -6,7 +6,6 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
-import java.io.BufferedWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +27,7 @@ public class LinearRegressionPredictorData extends BaseStepData implements StepD
     public String targetField;
     public String outputString;
     public Matrix A, y, w, p;
-    BufferedWriter bufferedWriter;
+
     public double mse;
     public boolean isTargetFieldIn;
 
