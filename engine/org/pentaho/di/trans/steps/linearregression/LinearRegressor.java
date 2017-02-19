@@ -5,6 +5,7 @@
 package org.pentaho.di.trans.steps.linearregression;
 
 import Jama.Matrix;
+import org.pentaho.di.bascis.FileUtils;
 import org.pentaho.di.computation.MatrixUtils;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMeta;
@@ -19,14 +20,12 @@ import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 /*
 * to do list:
-*   1. do type checking
+*   1. Do Type Checking
 *
 * */
 
@@ -115,7 +114,7 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
         if (meta.getWeightFileName() != null && meta.getWeightFileName() != "") {
             data.weightString = getWeightString();
-            saveWeightFile();
+            FileUtils.saveFile(meta.getWeightFileName(), data.weightString, false);
         }
 
     }
@@ -128,28 +127,18 @@ public class LinearRegressor extends BaseStep implements StepInterface {
             if( i != data.targetIndex )
                 val.append("," + inputRowMeta.getFieldNames()[i]);
         }
-        val.append(",target_field\n");
+        val.append(String.format(",%s\n", data.targetField));
 
         val.append(data.weights[0]);
         for (int i=1; i<data.fieldnrs; i++) {
             val.append(",");
             val.append(data.weights[i]);
         }
-        val.append("," + inputRowMeta.getFieldNames()[data.targetIndex]);
+        val.append(",0\n");
 
         return val.toString();
     }
 
-    public void saveWeightFile() {
-        // save the weight value to file
-        try {
-            data.bufferedWriter = new BufferedWriter(new FileWriter(meta.getWeightFileName()));
-            data.bufferedWriter.write(data.weightString);
-            data.bufferedWriter.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     @Override
     public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
         // wait for first for is available

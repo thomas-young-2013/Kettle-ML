@@ -1,6 +1,7 @@
 package org.pentaho.di.trans.steps.linearregressionpredictor;
 
 import Jama.Matrix;
+import org.pentaho.di.bascis.FileUtils;
 import org.pentaho.di.computation.MetrixUtils;
 import org.pentaho.di.core.RowSet;
 import org.pentaho.di.core.exception.KettleException;
@@ -12,19 +13,11 @@ import org.pentaho.di.trans.step.*;
 import org.pentaho.di.trans.steps.linearregression.LinearRegressor;
 import org.pentaho.di.trans.steps.linearregression.LinearRegressorMeta;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-/*
-* to do list:
-* 1. MSE library
-* 2. Output to file(appended or not)
-*
-* */
+import static org.pentaho.di.bascis.BasicUtils.getCurrentTime;
+
 /**
  * Created by thomasyngli on 2017/2/16.
  */
@@ -139,26 +132,15 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
                 }
                 data.y = new Matrix(yT);
                 data.mse = MetrixUtils.computeMES(data.p, data.y);
-                logBasic( String.format("the MSE is: %#.5f", data.mse ));
 
+                data.outputString = getOutputString();
+
+                logBasic( String.format("METRICS INFORMATION BELLOW:\n %s\n\n", data.outputString ));
                 if (meta.getProcessLogFileName() != null && meta.getProcessLogFileName() != "") {
-                    data.outputString = getOutputString();
-                    saveFile();
+                    FileUtils.saveFile(meta.getProcessLogFileName(), data.outputString, true);
                 }
             }
-
         }
-    }
-
-    public String getCurrentTime() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String val = "";
-        try {
-            val = sdf.parse(sdf.format(new Date())).toString();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return val;
     }
 
     /*
@@ -166,27 +148,27 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
     * */
     public String getOutputString() {
         StringBuilder val = new StringBuilder(256);
-        val.append("\n<-----------Kettle Working with Machine Learning----------->\n");
-        val.append("Current times is: " + getCurrentTime() + "\n");
-        ArrayList<?> steps = (ArrayList<?>) getTrans().findBaseSteps(meta.getTrainStep());
-        LinearRegressor linearRegressor = (LinearRegressor) steps.get(0);
-        LinearRegressorMeta linearRegressorMeta = (LinearRegressorMeta) linearRegressor.getLinearRegressorMeta();
-        val.append(String.format("Learning rate is: %f\n", linearRegressorMeta.getLearningRate()));
-        val.append(String.format("Iteration number is: %d\n", linearRegressorMeta.getIterationNum()));
-        val.append(String.format("MSE is: %#.5f\n", data.mse));
-        val.append(linearRegressor.getWeightString() + "\n\n");
-        return val.toString();
-    }
+        val.append("\n------------Kettle Working with Linear Regression-----------\n");
+        val.append("Running time is: " + getCurrentTime() + "\n");
 
-    public void saveFile() {
-        // save the weight value to file
-        try {
-            data.bufferedWriter = new BufferedWriter(new FileWriter(meta.getProcessLogFileName(), true));
-            data.bufferedWriter.write(data.outputString);
-            data.bufferedWriter.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        // find linear regression step and get the metrics info.
+        ArrayList<?> steps = (ArrayList<?>) getTrans().findBaseSteps(meta.getTrainStep());
+        String weights = "";
+        // decide whether the front step is the trainer or not
+        if (steps.get(0) instanceof LinearRegressor) {
+            LinearRegressor linearRegressor = (LinearRegressor) steps.get(0);
+            LinearRegressorMeta linearRegressorMeta = (LinearRegressorMeta) linearRegressor.getLinearRegressorMeta();
+            val.append(String.format("Learning rate is: %f\n", linearRegressorMeta.getLearningRate()));
+            val.append(String.format("Iteration number is: %d\n", linearRegressorMeta.getIterationNum()));
+
+            val.append(String.format("MSE is: %#.5f\n", data.mse));
+            // weight information
+            weights = linearRegressor.getWeightString();
+        } else {
+            val.append("Prediction according to the model in file");
         }
+        val.append(weights + "\n\n");
+        return val.toString();
     }
 
     @Override
@@ -194,10 +176,6 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
 
         if (first) {
             this.first = false;
-            /*
-             * init the weight meta and features meta
-             * init the rowsets
-             */
 
             while (true) {
                 List<RowSet> rowsets = getInputRowSets();
