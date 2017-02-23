@@ -229,10 +229,7 @@ public class LinearRegressionPredictor extends BaseStep implements StepInterface
         }
 
         if (!endedFlag) {
-            /* let's starting predicting the result.
-             * predict algorithm here.
-             * put the result to the next step: using putrow
-             */
+            /* let's starting predicting the result. */
             predcit();
             clearBuffers();
             this.setOutputDone();

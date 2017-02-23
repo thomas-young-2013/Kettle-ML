@@ -21,13 +21,6 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
 import java.util.ArrayList;
-import java.util.List;
-
-/*
- * to do list:
- *   1. Do Type Checking
- *
- * */
 
 public class LinearRegressor extends BaseStep implements StepInterface {
     private static Class<?> PKG = LinearRegressor.class; // for i18n
@@ -89,21 +82,19 @@ public class LinearRegressor extends BaseStep implements StepInterface {
 
             // compute the cost in every iteration.
             double cost = tmp.transpose().times(tmp).get(0, 0)/(2*matrixRowDim);
-            // System.out.println(cost);
+
             if (isDisplay && iter % meta.getDisplay_iteration_gap() == 0)
                 logBasic( String.format("iteration %dth, the cost is %f", iter, cost ));
         }
 
         // do prediction.
         Matrix preMat = X.times(theta);
-        // theta.print(1, 4);
 
         // compare the diff.
         if (meta.isCompared()) {
             double[][] arr1 = y.getArray();
             double[][] arr2 = preMat.getArray();
             for (int i = 0; i < matrixRowDim; i++) {
-                // System.out.println(String.format("target:%f -> predict:%f", arr1[i][0], arr2[i][0]));
                 logBasic( String.format("target:%f -> predict:%f", arr1[i][0], arr2[i][0]) );
             }
         }
@@ -143,8 +134,6 @@ public class LinearRegressor extends BaseStep implements StepInterface {
     public boolean processRow( StepMetaInterface smi, StepDataInterface sdi ) throws KettleException {
         // wait for first for is available
         Object[] r = getRow();
-
-        List<String> groupFields = null;
 
         if ( first ) {
             this.first = false;
